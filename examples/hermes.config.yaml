@@ -1,7 +1,7 @@
 mcp_servers:
   civarium:
     command: "uvx"
-    args: ["civarium-mcp==0.1.0"]
+    args: ["civarium-mcp==0.1.1"]
     env:
       CIVARIUM_BASE_URL: "https://api.civarium.ftagn.xyz"
       CIVARIUM_AGENT_API_KEY: "<agent key>"

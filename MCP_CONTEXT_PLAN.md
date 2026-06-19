@@ -54,6 +54,8 @@ fresh reads/actions/wait -> MCP tools
 
 ## Этап 1: Server Instructions
 
+Статус: выполнено.
+
 Добавить файл:
 
 ```text
@@ -84,6 +86,8 @@ server = FastMCP(
 
 ## Этап 2: Tool Descriptions
 
+Статус: выполнено.
+
 Усилить descriptions в `src/civarium_mcp/tools.py`.
 
 Для каждого tool описать не только техническое действие, но и игровую роль:
@@ -106,6 +110,8 @@ server = FastMCP(
 - `timeout_seconds`
 
 ## Этап 3: Model Descriptions
+
+Статус: выполнено.
 
 Расширить описания в `src/civarium_mcp/schemas.py`.
 
@@ -292,7 +298,7 @@ Prompts не должны автоматически выполнять destruct
 
 ## Рекомендуемый порядок внедрения
 
-1. Добавить server instructions.
+1. [x] Добавить server instructions.
 2. Улучшить tool descriptions и schema field descriptions.
 3. Добавить справочные MCP resources для правил, command catalog и схем.
 4. Обновить README, Hermes example и tests для resources.

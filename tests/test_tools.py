@@ -6,6 +6,7 @@ from uuid import UUID
 
 from support import CLIENT_COMMAND_ID, COMMAND_ID, NEXT_ROUND_ID, ROUND_ID, SESSION_ID
 
+from civarium_mcp.instructions import CIVARIUM_INSTRUCTIONS
 from civarium_mcp.schemas import (
     AcceptedCommandListOutput,
     AgentRoundOutput,
@@ -80,6 +81,7 @@ async def test_server_exposes_only_expected_tools(adapter_config) -> None:
 
     tools = await server.list_tools()
 
+    assert server.instructions == CIVARIUM_INSTRUCTIONS
     assert {tool.name for tool in tools} == EXPECTED_TOOLS
     tools_by_name = {tool.name: tool for tool in tools}
     for tool in tools:
@@ -91,6 +93,31 @@ async def test_server_exposes_only_expected_tools(adapter_config) -> None:
     assert tools_by_name["submit_command"].annotations.readOnlyHint is False
     assert tools_by_name["submit_command"].annotations.destructiveHint is False
     assert tools_by_name["submit_command"].annotations.idempotentHint is False
+
+    assert "open for the agent's decisions" in tools_by_name["get_active_round"].description
+    assert "observable slice of the world" in tools_by_name["get_visible_state"].description
+    assert "`construction` and `structure`" in tools_by_name["get_visible_state"].description
+    assert "command intent" in tools_by_name["submit_command"].description
+    assert "not an immediate mutation" in tools_by_name["submit_command"].description
+    assert "`construction_start`" in tools_by_name["submit_command"].description
+    assert "valid commands admitted for execution" in tools_by_name["list_my_commands"].description
+    assert (
+        "invalid submissions can still have receipts"
+        in tools_by_name["list_my_commands"].description
+    )
+    assert "never advances the Civarium session" in tools_by_name["wait_next_round"].description
+
+    submit_properties = tools_by_name["submit_command"].inputSchema["properties"]
+    assert "agent decision" in submit_properties["round_id"]["description"]
+    assert "idempotency key" in submit_properties["client_command_id"]["description"]
+    assert "backend command handler" in submit_properties["command_type"]["description"]
+    assert "current implemented command type" in submit_properties["command_type"]["description"]
+    assert "intended game action" in submit_properties["payload"]["description"]
+    assert "`title` and `rounds_to_complete`" in submit_properties["payload"]["description"]
+
+    wait_properties = tools_by_name["wait_next_round"].inputSchema["properties"]
+    assert "already observed by the agent" in wait_properties["after_round_id"]["description"]
+    assert "never used to advance the session" in wait_properties["timeout_seconds"]["description"]
 
     for tool_name in EXPECTED_TOOLS - {"submit_command"}:
         annotations = tools_by_name[tool_name].annotations

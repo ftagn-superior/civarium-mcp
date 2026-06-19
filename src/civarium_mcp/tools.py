@@ -20,27 +20,63 @@ from civarium_mcp.schemas import (
     WaitNextRoundOutput,
 )
 
-RoundIdParam = Annotated[UUID, Field(description="Civarium round UUID.")]
+RoundIdParam = Annotated[
+    UUID,
+    Field(
+        description=(
+            "Civarium round UUID returned by get_active_round; scopes one agent "
+            "decision window or valid command history."
+        ),
+    ),
+]
+AfterRoundIdParam = Annotated[
+    UUID,
+    Field(
+        description=(
+            "Active round UUID already observed by the agent; the tool waits until the "
+            "active round changes from this value."
+        ),
+    ),
+]
 ClientCommandIdParam = Annotated[
     UUID,
-    Field(description="Caller-generated UUID that must be unique per submitted command."),
+    Field(
+        description=(
+            "Caller-generated UUID used as the idempotency key for one submitted command "
+            "intent; choose a fresh value for each new intent and reuse it only when "
+            "retrying the same intent."
+        ),
+    ),
 ]
 CommandTypeParam = Annotated[
     str,
-    Field(description="Civarium command type, for example `construction_start`."),
+    Field(
+        description=(
+            "Civarium command type to submit, for example `construction_start`; this "
+            "selects the backend command handler and expected payload shape. The current "
+            "implemented command type is `construction_start`."
+        ),
+    ),
 ]
 CommandPayloadParam = Annotated[
     dict[str, Any],
     Field(
         description=(
-            "Opaque command payload. Shape depends on command_type and is validated by "
-            "the Civarium backend command registry; see Civarium command documentation."
+            "Command-specific payload describing the agent's intended game action. Shape "
+            "depends on command_type and is validated by the Civarium backend command "
+            "registry. For `construction_start`, send `title` and `rounds_to_complete`."
         ),
     ),
 ]
 TimeoutParam = Annotated[
     float,
-    Field(gt=0, description="Requested wait timeout in seconds; capped by adapter config."),
+    Field(
+        gt=0,
+        description=(
+            "Maximum seconds to wait for the active round to change; capped by adapter "
+            "config and never used to advance the session."
+        ),
+    ),
 ]
 
 READ_TOOL_ANNOTATIONS = ToolAnnotations(
@@ -67,7 +103,10 @@ def register_tools(
     wait_lock = asyncio.Lock()
 
     @server.tool(
-        description="Return the active Civarium round for the authenticated agent.",
+        description=(
+            "Return the active Civarium round for the authenticated agent. Use this to "
+            "know which round is currently open for the agent's decisions."
+        ),
         annotations=READ_TOOL_ANNOTATIONS,
         structured_output=True,
     )
@@ -75,7 +114,11 @@ def register_tools(
         return await gateway.get_active_round()
 
     @server.tool(
-        description="Return the visible Civarium state for the authenticated agent.",
+        description=(
+            "Return the visible Civarium state for the authenticated agent. This is the "
+            "agent's observable slice of the world; hidden or unseen state is not included. "
+            "Current entity libraries include `construction` and `structure`."
+        ),
         annotations=READ_TOOL_ANNOTATIONS,
         structured_output=True,
     )
@@ -84,9 +127,10 @@ def register_tools(
 
     @server.tool(
         description=(
-            "Submit a command for the authenticated agent. The payload is forwarded as "
-            "an opaque object; its required shape depends on command_type and is "
-            "validated by the Civarium backend command registry."
+            "Submit a command intent for the authenticated agent in a round. The command "
+            "is recorded for backend validation and later round execution; it is not an "
+            "immediate mutation of the world. The current implemented command type is "
+            "`construction_start`, with payload fields `title` and `rounds_to_complete`."
         ),
         annotations=WRITE_TOOL_ANNOTATIONS,
         structured_output=True,
@@ -105,7 +149,12 @@ def register_tools(
         )
 
     @server.tool(
-        description="List commands accepted for the authenticated agent in a Civarium round.",
+        description=(
+            "List valid commands admitted for execution for the authenticated agent in a "
+            "Civarium round. Use this to confirm which command intents are queued for "
+            "that round; invalid submissions can still have receipts but are not listed "
+            "here."
+        ),
         annotations=READ_TOOL_ANNOTATIONS,
         structured_output=True,
     )
@@ -114,14 +163,15 @@ def register_tools(
 
     @server.tool(
         description=(
-            "Poll the active round until it changes from after_round_id or a bounded "
-            "timeout expires. This never advances the Civarium session."
+            "Wait for the active round to change from after_round_id or until a bounded "
+            "timeout expires. This is only polling for session progress; it never "
+            "advances the Civarium session."
         ),
         annotations=READ_TOOL_ANNOTATIONS,
         structured_output=True,
     )
     async def wait_next_round(
-        after_round_id: RoundIdParam,
+        after_round_id: AfterRoundIdParam,
         timeout_seconds: TimeoutParam = 60.0,
     ) -> WaitNextRoundOutput:
         effective_timeout = min(timeout_seconds, config.wait_max_timeout_seconds)

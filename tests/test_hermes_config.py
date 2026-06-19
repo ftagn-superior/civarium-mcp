@@ -19,7 +19,7 @@ def test_hermes_example_exposes_only_expected_tools() -> None:
     text = Path("examples/hermes.config.yaml").read_text()
 
     assert 'command: "uvx"' in text
-    assert 'args: ["civarium-mcp==0.1.0"]' in text
+    assert 'args: ["civarium-mcp==0.1.1"]' in text
     assert "supports_parallel_tool_calls: false" in text
     assert "prompts: false" in text
     assert "resources: false" in text
