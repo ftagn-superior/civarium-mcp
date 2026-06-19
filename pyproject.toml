@@ -25,6 +25,10 @@ dependencies = [
     "pydantic-settings>=2.14.1",
 ]
 
+[project.urls]
+Repository = "https://github.com/ftagn-superior/civarium-mcp"
+Issues = "https://github.com/ftagn-superior/civarium-mcp/issues"
+
 [project.scripts]
 civarium-mcp = "civarium_mcp:main"
 

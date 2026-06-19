@@ -16,4 +16,4 @@ jobs:
       - run: uv sync --locked --all-extras --dev
       - run: uv run ruff check
       - run: uv run pytest
-      - run: uv build
+      - run: uv build --no-sources

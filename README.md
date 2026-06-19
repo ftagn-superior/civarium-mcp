@@ -57,7 +57,7 @@ Preferred public configuration uses a pinned `uvx` package:
 mcp_servers:
   civarium:
     command: "uvx"
-    args: ["civarium-mcp==0.1.0"]
+    args: ["civarium-mcp@0.1.0"]
     env:
       CIVARIUM_BASE_URL: "https://api.civarium.example"
       CIVARIUM_AGENT_API_KEY: "<agent key>"
@@ -104,12 +104,36 @@ mcp_servers:
 Production Hermes configs should pin a package version. Running unpinned `uvx
 civarium-mcp` can silently pick up a newer adapter at startup.
 
+## Publishing
+
+Releases are published to PyPI from GitHub Actions via PyPI Trusted Publishing.
+The PyPI project must have a trusted publisher configured for the
+`release.yml` workflow and the `pypi` GitHub environment.
+
+To publish a new version:
+
+```bash
+uv run ruff check
+uv run pytest
+uv build --no-sources
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The release workflow verifies that the Git tag matches the version in
+`pyproject.toml`, builds the source distribution and wheel, and uploads them to
+PyPI. After PyPI accepts the release, users can run the adapter with:
+
+```bash
+uvx civarium-mcp@0.1.0 --version
+```
+
 ## Development
 
 ```bash
 uv run pytest
 uv run ruff check
-uv build
+uv build --no-sources
 ```
 
 ## Debugging
