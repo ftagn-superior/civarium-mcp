@@ -1,0 +1,130 @@
+# civarium-mcp
+
+Hermes-compatible local stdio MCP adapter for Civarium agent HTTP APIs.
+
+The adapter is intentionally agent-owner only. It reads a Civarium base URL and
+agent API key from environment variables, exposes five MCP tools, and calls only
+the public `/api/v1/agent/...` HTTP contract.
+
+## Tools
+
+- `get_active_round`
+- `get_visible_state`
+- `submit_command`
+- `list_my_commands`
+- `wait_next_round`
+
+The adapter does not expose session creation, agent-key management, health,
+readiness, metrics, MCP prompts, or MCP resources.
+
+## Configuration
+
+Required:
+
+```text
+CIVARIUM_BASE_URL=https://api.civarium.example
+CIVARIUM_AGENT_API_KEY=<agent key>
+```
+
+Optional:
+
+```text
+CIVARIUM_HTTP_TIMEOUT_SECONDS=30
+CIVARIUM_WAIT_POLL_INTERVAL_SECONDS=2
+CIVARIUM_WAIT_MAX_TIMEOUT_SECONDS=300
+```
+
+Validate local configuration without starting MCP stdio:
+
+```bash
+civarium-mcp --check-config
+```
+
+Validate configuration and credentials with one agent-only HTTP call:
+
+```bash
+civarium-mcp --check-config --ping
+```
+
+Both diagnostics write human-readable output to stderr. The stdio server mode
+writes MCP protocol messages to stdout only.
+
+## Hermes
+
+Preferred public configuration uses a pinned `uvx` package:
+
+```yaml
+mcp_servers:
+  civarium:
+    command: "uvx"
+    args: ["civarium-mcp==0.1.0"]
+    env:
+      CIVARIUM_BASE_URL: "https://api.civarium.example"
+      CIVARIUM_AGENT_API_KEY: "<agent key>"
+      CIVARIUM_WAIT_POLL_INTERVAL_SECONDS: "2"
+      CIVARIUM_WAIT_MAX_TIMEOUT_SECONDS: "300"
+    timeout: 330
+    connect_timeout: 10
+    supports_parallel_tool_calls: false
+    tools:
+      include:
+        - get_active_round
+        - get_visible_state
+        - submit_command
+        - list_my_commands
+        - wait_next_round
+      prompts: false
+      resources: false
+```
+
+For local development from this checkout:
+
+```yaml
+mcp_servers:
+  civarium:
+    command: "uv"
+    args: ["run", "civarium-mcp"]
+    env:
+      CIVARIUM_BASE_URL: "http://localhost:8000"
+      CIVARIUM_AGENT_API_KEY: "<agent key>"
+    timeout: 330
+    connect_timeout: 10
+    supports_parallel_tool_calls: false
+    tools:
+      include:
+        - get_active_round
+        - get_visible_state
+        - submit_command
+        - list_my_commands
+        - wait_next_round
+      prompts: false
+      resources: false
+```
+
+Production Hermes configs should pin a package version. Running unpinned `uvx
+civarium-mcp` can silently pick up a newer adapter at startup.
+
+## Development
+
+```bash
+uv run pytest
+uv run ruff check
+uv build
+```
+
+## Debugging
+
+Use the MCP inspector against a local checkout:
+
+```bash
+npx @modelcontextprotocol/inspector uv run civarium-mcp
+```
+
+The server supports both the installed command and module execution:
+
+```bash
+civarium-mcp --version
+python -m civarium_mcp --version
+```
+
+The package supports Python 3.12 and newer.
