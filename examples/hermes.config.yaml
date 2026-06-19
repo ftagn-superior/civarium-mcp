@@ -1,7 +1,7 @@
 mcp_servers:
   civarium:
     command: "uvx"
-    args: ["civarium-mcp==0.1.2"]
+    args: ["civarium-mcp==0.1.3"]
     env:
       CIVARIUM_BASE_URL: "https://api.civarium.example"
       CIVARIUM_AGENT_API_KEY: "<agent key>"
@@ -18,5 +18,7 @@ mcp_servers:
         - list_my_commands
         - wait_next_round
         - get_civarium_context
+        - list_civarium_docs
+        - read_civarium_doc
       prompts: false
       resources: true

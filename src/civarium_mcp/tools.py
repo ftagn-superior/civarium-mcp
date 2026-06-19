@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from mcp.server.fastmcp import FastMCP
@@ -16,12 +16,21 @@ from civarium_mcp.resources import (
     OVERVIEW_MIME_TYPE,
     OVERVIEW_RESOURCE_TITLE,
     OVERVIEW_RESOURCE_URI,
+    CivariumDocReference,
+    get_civarium_doc,
+    load_civarium_doc,
     load_civarium_overview,
+)
+from civarium_mcp.resources import (
+    list_civarium_docs as list_civarium_doc_references,
 )
 from civarium_mcp.schemas import (
     AcceptedCommandListOutput,
     AgentRoundOutput,
     CivariumContextOutput,
+    CivariumDocListOutput,
+    CivariumDocOutput,
+    CivariumDocSummaryOutput,
     CommandReceivedOutput,
     VisibleStateOutput,
     WaitNextRoundOutput,
@@ -85,6 +94,15 @@ TimeoutParam = Annotated[
         ),
     ),
 ]
+DocIdParam = Annotated[
+    Literal["overview", "tools"],
+    Field(
+        description=(
+            "Static Civarium document id to read. Use list_civarium_docs first when "
+            "discovering available documentation. Current ids are `overview` and `tools`."
+        ),
+    ),
+]
 
 READ_TOOL_ANNOTATIONS = ToolAnnotations(
     readOnlyHint=True,
@@ -98,6 +116,16 @@ WRITE_TOOL_ANNOTATIONS = ToolAnnotations(
     idempotentHint=False,
     openWorldHint=False,
 )
+
+
+def _doc_summary(doc: CivariumDocReference) -> CivariumDocSummaryOutput:
+    return CivariumDocSummaryOutput(
+        doc_id=doc.doc_id,
+        uri=doc.uri,
+        title=doc.title,
+        mime_type=doc.mime_type,
+        description=doc.description,
+    )
 
 
 def register_tools(
@@ -125,6 +153,36 @@ def register_tools(
             title=OVERVIEW_RESOURCE_TITLE,
             mime_type=OVERVIEW_MIME_TYPE,
             content=load_civarium_overview(),
+        )
+
+    @server.tool(
+        description=(
+            "List the static Civarium Markdown documents available to the authenticated "
+            "agent. Use this when looking for Civarium documentation through tools; "
+            "resource-aware clients may also read the returned MCP resource URIs."
+        ),
+        annotations=READ_TOOL_ANNOTATIONS,
+        structured_output=True,
+    )
+    async def list_civarium_docs() -> CivariumDocListOutput:
+        return CivariumDocListOutput(
+            docs=[_doc_summary(doc) for doc in list_civarium_doc_references()],
+        )
+
+    @server.tool(
+        description=(
+            "Read one static Civarium Markdown document by doc_id. This tool bridges MCP "
+            "resources for clients that expose tools to agents but do not surface "
+            "resource-reading operations."
+        ),
+        annotations=READ_TOOL_ANNOTATIONS,
+        structured_output=True,
+    )
+    async def read_civarium_doc(doc_id: DocIdParam) -> CivariumDocOutput:
+        doc = get_civarium_doc(doc_id)
+        return CivariumDocOutput(
+            **_doc_summary(doc).model_dump(),
+            content=load_civarium_doc(doc.doc_id),
         )
 
     @server.tool(

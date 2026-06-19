@@ -18,6 +18,8 @@ from civarium_mcp.server import create_server
 
 EXPECTED_TOOLS = {
     "get_civarium_context",
+    "list_civarium_docs",
+    "read_civarium_doc",
     "get_active_round",
     "get_visible_state",
     "submit_command",
@@ -93,6 +95,10 @@ async def test_server_exposes_only_expected_tools(adapter_config) -> None:
 
     assert "static Civarium overview" in tools_by_name["get_civarium_context"].description
     assert "MCP clients that expose tools" in tools_by_name["get_civarium_context"].description
+    assert "looking for Civarium documentation" in tools_by_name["list_civarium_docs"].description
+    assert "Read one static Civarium Markdown document" in tools_by_name[
+        "read_civarium_doc"
+    ].description
     assert tools_by_name["submit_command"].annotations is not None
     assert tools_by_name["submit_command"].annotations.readOnlyHint is False
     assert tools_by_name["submit_command"].annotations.destructiveHint is False
@@ -122,6 +128,10 @@ async def test_server_exposes_only_expected_tools(adapter_config) -> None:
     wait_properties = tools_by_name["wait_next_round"].inputSchema["properties"]
     assert "already observed by the agent" in wait_properties["after_round_id"]["description"]
     assert "never used to advance the session" in wait_properties["timeout_seconds"]["description"]
+
+    read_doc_properties = tools_by_name["read_civarium_doc"].inputSchema["properties"]
+    assert read_doc_properties["doc_id"]["enum"] == ["overview", "tools"]
+    assert "Static Civarium document id" in read_doc_properties["doc_id"]["description"]
 
     for tool_name in EXPECTED_TOOLS - {"submit_command"}:
         annotations = tools_by_name[tool_name].annotations
@@ -168,6 +178,30 @@ async def test_civarium_context_available_as_tool_and_resource(adapter_config) -
     assert len(resource_contents) == 1
     assert resource_contents[0].mime_type == "text/markdown"
     assert resource_contents[0].content == tool_output["content"]
+
+
+async def test_civarium_docs_available_through_tools(adapter_config) -> None:
+    server = create_server(adapter_config, gateway=FakeGateway())
+
+    list_result = await server.call_tool("list_civarium_docs", {})
+    list_output = structured_content(list_result)
+
+    assert {doc["doc_id"] for doc in list_output["docs"]} == {"overview", "tools"}
+    docs_by_id = {doc["doc_id"]: doc for doc in list_output["docs"]}
+    assert docs_by_id["overview"]["uri"] == OVERVIEW_RESOURCE_URI
+    assert docs_by_id["tools"]["uri"] == TOOLS_RESOURCE_URI
+    assert docs_by_id["overview"]["mime_type"] == "text/markdown"
+    assert "Civarium" in docs_by_id["tools"]["title"]
+
+    read_result = await server.call_tool("read_civarium_doc", {"doc_id": "tools"})
+    read_output = structured_content(read_result)
+
+    assert read_output["doc_id"] == "tools"
+    assert read_output["uri"] == TOOLS_RESOURCE_URI
+    assert read_output["title"] == "Civarium Agent Tools"
+    assert read_output["mime_type"] == "text/markdown"
+    assert "# Civarium Agent Tools" in read_output["content"]
+    assert "`submit_command`" in read_output["content"]
 
 
 async def test_civarium_tools_spec_available_as_resource(adapter_config) -> None:

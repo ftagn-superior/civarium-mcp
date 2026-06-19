@@ -32,6 +32,51 @@ class CivariumContextOutput(BaseModel):
     )
 
 
+class CivariumDocSummaryOutput(BaseModel):
+    """Metadata for one static Civarium reference document."""
+
+    doc_id: str = Field(
+        description=(
+            "Stable document id accepted by read_civarium_doc, such as `overview` "
+            "or `tools`."
+        ),
+    )
+    uri: str = Field(
+        description="Canonical MCP resource URI for this Civarium reference document.",
+    )
+    title: str = Field(
+        description="Human-readable title of the Civarium reference document.",
+    )
+    mime_type: str = Field(
+        description="MIME type of the reference document content.",
+    )
+    description: str = Field(
+        description=(
+            "Short explanation of what this document covers and when an agent should "
+            "read it."
+        ),
+    )
+
+
+class CivariumDocListOutput(BaseModel):
+    """List of static Civarium reference documents exposed by this adapter."""
+
+    docs: list[CivariumDocSummaryOutput] = Field(
+        description=(
+            "Static Civarium docs available through read_civarium_doc and, for "
+            "resource-aware clients, the corresponding MCP resource URI."
+        ),
+    )
+
+
+class CivariumDocOutput(CivariumDocSummaryOutput):
+    """Static Civarium reference document content."""
+
+    content: str = Field(
+        description="Markdown content of the requested Civarium reference document.",
+    )
+
+
 class EntityLibraryOutput(BaseModel):
     """Visible entity library returned by Civarium."""
 

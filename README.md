@@ -12,6 +12,9 @@ clients do not pass `agent_id` or `session_id` as tool input.
 
 - `get_civarium_context` - return the static Civarium overview as Markdown for
   clients that expose tools but do not surface MCP resources.
+- `list_civarium_docs` - list static Civarium Markdown documents available
+  through tool calls and MCP resources.
+- `read_civarium_doc` - read one static Civarium Markdown document by `doc_id`.
 - `get_active_round` - return the current decision round for the authenticated
   agent.
 - `get_visible_state` - return the agent's visible slice of the world.
@@ -41,9 +44,10 @@ that explain the current Civarium domain contract:
   an agent, including their game-world meaning, key inputs and outputs, and
   suggested decision loop.
 
-Clients with resource support should read `civarium://docs/overview` directly.
-Clients that expose only tools can call `get_civarium_context`, which returns
-the same Markdown document with its canonical resource URI.
+Clients with resource support should read the `civarium://docs/...` URIs
+directly. Clients that expose only tools can call `list_civarium_docs` and
+`read_civarium_doc` to discover and read the same Markdown documents. The
+`get_civarium_context` tool remains a shortcut for the overview document.
 
 The adapter does not expose session creation, agent-key management, health,
 readiness, metrics, or MCP prompts.
@@ -88,7 +92,7 @@ Preferred public configuration uses a pinned `uvx` package:
 mcp_servers:
   civarium:
     command: "uvx"
-    args: ["civarium-mcp@0.1.2"]
+    args: ["civarium-mcp@0.1.3"]
     env:
       CIVARIUM_BASE_URL: "https://api.civarium.example"
       CIVARIUM_AGENT_API_KEY: "<agent key>"
@@ -105,6 +109,8 @@ mcp_servers:
         - list_my_commands
         - wait_next_round
         - get_civarium_context
+        - list_civarium_docs
+        - read_civarium_doc
       prompts: false
       resources: true
 ```
@@ -130,6 +136,8 @@ mcp_servers:
         - list_my_commands
         - wait_next_round
         - get_civarium_context
+        - list_civarium_docs
+        - read_civarium_doc
       prompts: false
       resources: true
 ```
@@ -149,8 +157,8 @@ To publish a new version:
 uv run ruff check
 uv run pytest
 uv build --no-sources
-git tag v0.1.2
-git push origin v0.1.2
+git tag v0.1.3
+git push origin v0.1.3
 ```
 
 The release workflow verifies that the Git tag matches the version in
@@ -158,7 +166,7 @@ The release workflow verifies that the Git tag matches the version in
 PyPI. After PyPI accepts the release, users can run the adapter with:
 
 ```bash
-uvx civarium-mcp@0.1.2 --version
+uvx civarium-mcp@0.1.3 --version
 ```
 
 ## Development

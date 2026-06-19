@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.3
+
+- Add `list_civarium_docs` and `read_civarium_doc` read-only tools so clients
+  that do not expose MCP resource-reading operations can still discover and read
+  the packaged Civarium Markdown docs through normal tool calls.
+- Keep `get_civarium_context` as a backward-compatible overview shortcut.
+
 ## 0.1.2
 
 - Add a packaged Civarium overview Markdown document exposed as
