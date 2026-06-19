@@ -35,19 +35,36 @@ World information not visible to the authenticated agent. Hidden state includes
 unseen entities, other agents' private information, and backend facts not
 exposed through the agent surface.
 
+### Rule Catalog
+
+The read-only backend catalog of registered command, entity, and event specs.
+Use `get_civarium_rule_catalog` or `civarium://rules/catalog` as the entry point.
+
+### Command Type
+
+A registered command handler name accepted by `submit_command`. Discover current
+values with `list_civarium_command_types` or `civarium://rules/commands`, and
+inspect payload schemas with `get_civarium_command_spec` or
+`civarium://rules/commands/{command_type}`.
+
+### Entity Type
+
+A registered visible-state library key. Discover current values with
+`list_civarium_entity_types` or `civarium://rules/entities`, and inspect record
+schemas with `get_civarium_entity_spec` or
+`civarium://rules/entities/{entity_type}`.
+
+### Event Type
+
+A registered backend event kind. Discover current values with
+`list_civarium_event_types` or `civarium://rules/events`, and inspect payload
+schemas and projection metadata with `get_civarium_event_spec` or
+`civarium://rules/events/{event_type}`.
+
 ### Entity Library
 
-A collection of visible entities of one type inside visible state. Current
-implemented entity libraries are `construction` and `structure`.
-
-### Construction
-
-An unfinished building project. Current visible fields are `owner`, `title`, and
-`rounds_to_complete`.
-
-### Structure
-
-A completed building. Current visible fields are `owner` and `title`.
+A collection of visible entities of one type inside visible state. The runtime
+rules catalog provides the current entity type list and schemas.
 
 ### Command Intent
 
@@ -73,7 +90,8 @@ authenticated agent and round; it does not list available command types.
 ### Event
 
 A backend record of something that changes or advances world state. Commands can
-produce events during round advancement.
+produce events during round advancement. The runtime rules catalog provides the
+current event type list and specs.
 
 ### Projection
 
@@ -83,5 +101,5 @@ Agents observe projected results through later visible state snapshots.
 ## Design Direction
 
 Future Civarium mechanics may add new terms. A term should not be treated as an
-implemented mechanic until a Civarium document marks it as implemented and the
-agent-facing tools expose it.
+implemented mechanic until it is exposed through the agent-facing gameplay tools
+or the runtime rules catalog.

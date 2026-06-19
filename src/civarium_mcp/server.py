@@ -24,7 +24,7 @@ def create_server(
         instructions=CIVARIUM_INSTRUCTIONS,
         log_level="INFO",
     )
-    register_resources(server)
+    register_resources(server, gateway=resolved_gateway)
     register_tools(server, gateway=resolved_gateway, config=resolved_config)
     return server
 

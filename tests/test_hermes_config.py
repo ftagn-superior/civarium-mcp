@@ -10,6 +10,13 @@ EXPECTED_TOOLS = {
     "get_civarium_context",
     "list_civarium_docs",
     "read_civarium_doc",
+    "get_civarium_rule_catalog",
+    "list_civarium_command_types",
+    "get_civarium_command_spec",
+    "list_civarium_entity_types",
+    "get_civarium_entity_spec",
+    "list_civarium_event_types",
+    "get_civarium_event_spec",
     "get_active_round",
     "get_visible_state",
     "submit_command",
@@ -22,7 +29,7 @@ def test_hermes_example_exposes_only_expected_tools() -> None:
     text = Path("examples/hermes.config.yaml").read_text()
 
     assert 'command: "uvx"' in text
-    assert 'args: ["civarium-mcp==0.1.5"]' in text
+    assert 'args: ["civarium-mcp==0.1.6"]' in text
     assert "supports_parallel_tool_calls: false" in text
     assert "prompts: false" in text
     assert "resources: true" in text

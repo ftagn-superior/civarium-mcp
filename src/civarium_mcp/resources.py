@@ -2,10 +2,40 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from importlib.resources import files
+from typing import TYPE_CHECKING, Any
 
 from mcp.server.fastmcp import FastMCP
+
+from civarium_mcp.schemas import RuleCatalogResourcesOutput
+
+if TYPE_CHECKING:
+    from civarium_mcp.gateway import HttpCivariumGateway
+
+
+RULE_CATALOG_RESOURCE_URI = "civarium://rules/catalog"
+RULE_COMMAND_TYPES_RESOURCE_URI = "civarium://rules/commands"
+RULE_COMMAND_SPEC_RESOURCE_URI_TEMPLATE = "civarium://rules/commands/{command_type}"
+RULE_ENTITY_TYPES_RESOURCE_URI = "civarium://rules/entities"
+RULE_ENTITY_SPEC_RESOURCE_URI_TEMPLATE = "civarium://rules/entities/{entity_type}"
+RULE_EVENT_TYPES_RESOURCE_URI = "civarium://rules/events"
+RULE_EVENT_SPEC_RESOURCE_URI_TEMPLATE = "civarium://rules/events/{event_type}"
+RULE_CATALOG_MIME_TYPE = "application/json"
+
+
+def rule_catalog_resources() -> RuleCatalogResourcesOutput:
+    """Return canonical MCP resource URIs for the runtime rule catalog."""
+    return RuleCatalogResourcesOutput(
+        catalog_uri=RULE_CATALOG_RESOURCE_URI,
+        command_types_uri=RULE_COMMAND_TYPES_RESOURCE_URI,
+        command_spec_uri_template=RULE_COMMAND_SPEC_RESOURCE_URI_TEMPLATE,
+        entity_types_uri=RULE_ENTITY_TYPES_RESOURCE_URI,
+        entity_spec_uri_template=RULE_ENTITY_SPEC_RESOURCE_URI_TEMPLATE,
+        event_types_uri=RULE_EVENT_TYPES_RESOURCE_URI,
+        event_spec_uri_template=RULE_EVENT_SPEC_RESOURCE_URI_TEMPLATE,
+    )
 
 
 @dataclass(frozen=True)
@@ -94,9 +124,8 @@ CIVARIUM_DOCS: tuple[CivariumDocReference, ...] = (
         mime_type="text/markdown",
         filename="civarium-current-mechanics.md",
         description=(
-            "Read this when you need the current implemented mechanics: "
-            "construction_start, construction, structure, owner-based visibility, and "
-            "mechanics not available through MCP."
+            "Read this when you need to discover current implemented mechanics through "
+            "the runtime rules catalog and stay inside the exposed MCP surface."
         ),
     ),
     CivariumDocReference(
@@ -159,8 +188,12 @@ def load_civarium_tools() -> str:
     return load_civarium_doc("tools")
 
 
-def register_resources(server: FastMCP) -> None:
-    """Register static Civarium reference documents as MCP resources."""
+def register_resources(
+    server: FastMCP,
+    *,
+    gateway: HttpCivariumGateway | None = None,
+) -> None:
+    """Register Civarium reference documents and runtime catalogs as MCP resources."""
 
     def make_reader(doc_id: str):
         def read_civarium_doc_resource() -> str:
@@ -176,3 +209,98 @@ def register_resources(server: FastMCP) -> None:
             description=doc.description,
             mime_type=doc.mime_type,
         )(make_reader(doc.doc_id))
+
+    if gateway is None:
+        return
+
+    @server.resource(
+        RULE_CATALOG_RESOURCE_URI,
+        name="civarium_rule_catalog",
+        title="Civarium Rule Catalog",
+        description=(
+            "Compact JSON index of the registered command, entity, and event types "
+            "reported by the Civarium backend rules catalog."
+        ),
+        mime_type=RULE_CATALOG_MIME_TYPE,
+    )
+    async def read_civarium_rule_catalog_resource() -> dict[str, Any]:
+        command_types, entity_types, event_types = await asyncio.gather(
+            gateway.list_command_types(),
+            gateway.list_entity_types(),
+            gateway.list_event_types(),
+        )
+        return {
+            "resources": rule_catalog_resources().model_dump(mode="json"),
+            "command_types": command_types.command_types,
+            "entity_types": entity_types.entity_types,
+            "event_types": event_types.event_types,
+        }
+
+    @server.resource(
+        RULE_COMMAND_TYPES_RESOURCE_URI,
+        name="civarium_command_types",
+        title="Civarium Command Types",
+        description="JSON list of command types currently registered by the backend.",
+        mime_type=RULE_CATALOG_MIME_TYPE,
+    )
+    async def read_civarium_command_types_resource() -> dict[str, Any]:
+        return (await gateway.list_command_types()).model_dump(mode="json")
+
+    @server.resource(
+        RULE_COMMAND_SPEC_RESOURCE_URI_TEMPLATE,
+        name="civarium_command_spec",
+        title="Civarium Command Spec",
+        description=(
+            "JSON specification for one registered command type, including payload "
+            "schema, validators, and statically discovered emitted event types."
+        ),
+        mime_type=RULE_CATALOG_MIME_TYPE,
+    )
+    async def read_civarium_command_spec_resource(command_type: str) -> dict[str, Any]:
+        return (await gateway.get_command_spec(command_type)).model_dump(mode="json")
+
+    @server.resource(
+        RULE_ENTITY_TYPES_RESOURCE_URI,
+        name="civarium_entity_types",
+        title="Civarium Entity Types",
+        description="JSON list of entity types currently registered by the backend.",
+        mime_type=RULE_CATALOG_MIME_TYPE,
+    )
+    async def read_civarium_entity_types_resource() -> dict[str, Any]:
+        return (await gateway.list_entity_types()).model_dump(mode="json")
+
+    @server.resource(
+        RULE_ENTITY_SPEC_RESOURCE_URI_TEMPLATE,
+        name="civarium_entity_spec",
+        title="Civarium Entity Spec",
+        description=(
+            "JSON specification for one registered entity type, including the schema "
+            "for records in that entity library."
+        ),
+        mime_type=RULE_CATALOG_MIME_TYPE,
+    )
+    async def read_civarium_entity_spec_resource(entity_type: str) -> dict[str, Any]:
+        return (await gateway.get_entity_spec(entity_type)).model_dump(mode="json")
+
+    @server.resource(
+        RULE_EVENT_TYPES_RESOURCE_URI,
+        name="civarium_event_types",
+        title="Civarium Event Types",
+        description="JSON list of event types currently registered by the backend.",
+        mime_type=RULE_CATALOG_MIME_TYPE,
+    )
+    async def read_civarium_event_types_resource() -> dict[str, Any]:
+        return (await gateway.list_event_types()).model_dump(mode="json")
+
+    @server.resource(
+        RULE_EVENT_SPEC_RESOURCE_URI_TEMPLATE,
+        name="civarium_event_spec",
+        title="Civarium Event Spec",
+        description=(
+            "JSON specification for one registered event type, including payload schema, "
+            "validators, and projection modificator metadata."
+        ),
+        mime_type=RULE_CATALOG_MIME_TYPE,
+    )
+    async def read_civarium_event_spec_resource(event_type: str) -> dict[str, Any]:
+        return (await gateway.get_event_spec(event_type)).model_dump(mode="json")

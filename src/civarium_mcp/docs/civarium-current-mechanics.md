@@ -1,91 +1,58 @@
 # Civarium Current Mechanics
 
-This document intentionally describes only the current implemented Civarium
-agent MCP reality. It should keep agents inside the mechanics that exist now.
+This document explains how an agent should discover the current implemented
+Civarium mechanics. It intentionally does not copy command, entity, or event
+specifications that are already exposed by the backend rules catalog.
 
 ## Implemented
 
-### Current Loop
+### Discovery Loop
 
-The current implemented loop is a construction loop:
+Use this loop when deciding what mechanics are available:
 
-1. Read the active round with `get_active_round`.
-2. Read visible state with `get_visible_state`.
-3. Submit a `construction_start` command intent when appropriate.
-4. Confirm valid queued submitted commands with `list_queued_submitted_commands`.
-5. Wait for the active round to change with `wait_next_round`.
-6. Read visible state again to observe resulting changes.
+1. Read `get_civarium_rule_catalog` or `civarium://rules/catalog`.
+2. Read command specs with `get_civarium_command_spec` or
+   `civarium://rules/commands/{command_type}` before constructing payloads.
+3. Read entity specs with `get_civarium_entity_spec` or
+   `civarium://rules/entities/{entity_type}` before interpreting entity records.
+4. Read event specs with `get_civarium_event_spec` or
+   `civarium://rules/events/{event_type}` when reasoning about emitted events
+   and projection metadata.
+5. Read the active round with `get_active_round`.
+6. Read visible state with `get_visible_state`.
+7. Submit a registered command intent with `submit_command` when appropriate.
+8. Confirm valid queued submitted commands with `list_queued_submitted_commands`.
+9. Wait for the active round to change with `wait_next_round`.
+10. Read visible state again to observe resulting changes.
 
-### Command: `construction_start`
+### Rule Catalog Boundary
 
-`construction_start` starts a building project for the authenticated agent.
+The rules catalog is the source of truth for:
 
-Payload fields:
+- available command types;
+- command payload schemas;
+- command validators and statically discovered event types;
+- available entity types;
+- entity record schemas;
+- available event types;
+- event payload schemas, validators, and projection metadata.
 
-- `title`: title of the future building;
-- `rounds_to_complete`: number of rounds before the construction completes.
+Static Markdown docs explain how to use those facts. They should not be treated
+as a snapshot of the current rule registry.
 
-The command handler creates a construction-started event for the submitting
-agent. The current validator is minimal and primarily checks the typed payload
-shape.
+### Availability Rule
 
-### Entity: `construction`
-
-`construction` represents an unfinished building project.
-
-Visible fields:
-
-- `owner`: UUID of the owning agent;
-- `title`: title of the future building;
-- `rounds_to_complete`: number of rounds remaining before completion.
-
-During passive round advancement, a construction with more than one remaining
-round progresses by decrementing `rounds_to_complete`. A construction with one
-remaining round completes and can produce a `structure`.
-
-### Entity: `structure`
-
-`structure` represents a completed building.
-
-Visible fields:
-
-- `owner`: UUID of the owning agent;
-- `title`: title of the completed building.
-
-Completed structures do not currently expose production, defense, storage,
-population, upkeep, victory, or action effects through the MCP surface.
-
-### Visibility
-
-Current visibility is owner-based. A visible `construction` or `structure`
-belongs to the authenticated agent.
+A mechanic is available to the agent only when it is exposed through the MCP
+gameplay tools or the runtime rules catalog. Do not infer extra actions from the
+long-term game theme, from names that appear in examples, or from hidden backend
+concepts.
 
 Visible state is still a limited observation. It should not be treated as a full
 session dump.
 
-### Currently Not Available Through MCP
-
-The current MCP agent surface does not expose implemented actions for:
-
-- movement;
-- scouting;
-- map exploration;
-- diplomacy;
-- trade;
-- armies or combat;
-- resource production or spending;
-- population;
-- technologies;
-- victory conditions;
-- direct event creation;
-- direct state mutation;
-- round advancement.
-
-Agents should not attempt to use these mechanics unless a future document marks
-them as implemented and the tools expose a way to use them.
-
 ## Design Direction
 
 Civarium's long-term direction includes a broader strategy game. This document
-does not define those future mechanics. It only describes what the current MCP
-agent surface can rely on.
+does not define those future mechanics. It describes how agents should discover
+and constrain themselves to the mechanics currently exposed by the MCP adapter
+and backend rules catalog.

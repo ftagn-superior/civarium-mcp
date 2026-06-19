@@ -116,6 +116,94 @@ async def test_list_queued_submitted_commands_omits_backend_agent_id(
     assert result.commands[0].command_type == "construction_start"
 
 
+async def test_rules_catalog_endpoints_are_allowed_and_validated(adapter_config) -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        path = request.url.path
+        if path.endswith("/api/v1/rules/commands"):
+            return httpx.Response(200, json={"command_types": ["construction_start"]})
+        if path.endswith("/api/v1/rules/commands/construction_start"):
+            return httpx.Response(
+                200,
+                json={
+                    "command_type": "construction_start",
+                    "description": "Payload for starting construction.",
+                    "payload_schema": {
+                        "type": "object",
+                        "properties": {
+                            "title": {"type": "string"},
+                            "rounds_to_complete": {"type": "integer"},
+                        },
+                    },
+                    "events": ["construction_started"],
+                    "validators": [
+                        {
+                            "name": "check_construction_start",
+                            "description": "Validate construction start.",
+                        }
+                    ],
+                },
+            )
+        if path.endswith("/api/v1/rules/entities"):
+            return httpx.Response(200, json={"entity_types": ["construction", "structure"]})
+        if path.endswith("/api/v1/rules/entities/structure"):
+            return httpx.Response(
+                200,
+                json={
+                    "entity_type": "structure",
+                    "description": "Completed building.",
+                    "entity_schema": {
+                        "type": "object",
+                        "properties": {"title": {"type": "string"}},
+                    },
+                },
+            )
+        if path.endswith("/api/v1/rules/events"):
+            return httpx.Response(200, json={"event_types": ["construction_started"]})
+        if path.endswith("/api/v1/rules/events/construction_started"):
+            return httpx.Response(
+                200,
+                json={
+                    "event_type": "construction_started",
+                    "description": "Construction started.",
+                    "payload_schema": {
+                        "type": "object",
+                        "properties": {"title": {"type": "string"}},
+                    },
+                    "validators": [{"name": "check_construction_started"}],
+                    "modificator": {"name": "on_construction_started"},
+                },
+            )
+        return httpx.Response(404, json={"detail": "unexpected path"})
+
+    gateway = HttpCivariumGateway(adapter_config, transport=httpx.MockTransport(handler))
+
+    command_types = await gateway.list_command_types()
+    command_spec = await gateway.get_command_spec("construction_start")
+    entity_types = await gateway.list_entity_types()
+    entity_spec = await gateway.get_entity_spec("structure")
+    event_types = await gateway.list_event_types()
+    event_spec = await gateway.get_event_spec("construction_started")
+
+    assert [str(request.url) for request in requests] == [
+        "https://api.civarium.example/api/v1/rules/commands",
+        "https://api.civarium.example/api/v1/rules/commands/construction_start",
+        "https://api.civarium.example/api/v1/rules/entities",
+        "https://api.civarium.example/api/v1/rules/entities/structure",
+        "https://api.civarium.example/api/v1/rules/events",
+        "https://api.civarium.example/api/v1/rules/events/construction_started",
+    ]
+    assert all(request.headers["Authorization"] == "Bearer agent-secret" for request in requests)
+    assert command_types.command_types == ["construction_start"]
+    assert command_spec.events == ["construction_started"]
+    assert entity_types.entity_types == ["construction", "structure"]
+    assert entity_spec.entity_type == "structure"
+    assert event_types.event_types == ["construction_started"]
+    assert event_spec.modificator.name == "on_construction_started"
+
+
 async def test_gateway_errors_are_secret_safe(adapter_config) -> None:
     async def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(403, json={"detail": "bad key agent-secret"})

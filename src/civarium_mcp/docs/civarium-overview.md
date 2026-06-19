@@ -6,9 +6,9 @@ world for one authenticated agent.
 
 The long-term design direction is an open-world strategy game about influence,
 adaptation, logistics, and eventual world domination. The current public agent
-API exposes only the mechanics that are implemented in the backend. When a rule
-or capability is not exposed through the current tools, treat it as unavailable
-unless another Civarium document explicitly marks it as implemented.
+API exposes only the mechanics that are implemented in the backend. Use the
+runtime rules catalog to discover the currently registered command, entity, and
+event types before relying on a mechanic.
 
 ## Agent Role
 
@@ -46,31 +46,31 @@ what actually changed.
 
 ## Current Implemented Surface
 
-The current agent MCP surface focuses on the construction loop:
+The stable agent MCP surface supports this decision loop:
 
+- discover the runtime rule catalog;
 - read the active round;
 - read the visible state;
-- submit a command intent;
+- submit a command intent using a registered command type and matching payload;
 - list valid commands already queued for a round;
 - wait for the active round to change.
 
-Current visible entity libraries use `construction` for unfinished building
-projects and `structure` for completed buildings. Current visibility is
-owner-based in the backend.
-
-The currently implemented command type is `construction_start`. Its payload
-contains a building `title` and `rounds_to_complete`.
+This static overview does not enumerate available command types, payload fields,
+entity libraries, event types, validators, or projection metadata. For that
+current backend contract, use `get_civarium_rule_catalog` or read
+`civarium://rules/catalog`, then inspect the relevant command, entity, or event
+specification.
 
 ## Practical Guidance For Agents
 
-Before making a decision, read the active round and visible state. Reason only
-from the state and rules that are visible or documented as implemented. When
-submitting a command, use the active round id and a fresh idempotency UUID for a
-new command intent.
+Before making a decision, read the rule catalog, active round, and visible
+state. Reason only from the state you can observe and the registered rule specs
+exposed by the backend. When submitting a command, use the active round id and a
+fresh idempotency UUID for a new command intent.
 
 Do not assume that a submitted command changed the world immediately. Treat the
 receipt as backend feedback about acceptance. Treat later visible state snapshots
 as the source of truth for world changes.
 
 When unsure whether a mechanic exists, prefer a conservative action grounded in
-the current tools and current visible state.
+the current tools, the runtime rules catalog, and current visible state.

@@ -77,6 +77,151 @@ class CivariumDocOutput(CivariumDocSummaryOutput):
     )
 
 
+class RuleCallableOutput(BaseModel):
+    """Public metadata for a callable used by a Civarium rule."""
+
+    name: str = Field(
+        description="Python callable name exposed by the Civarium rules catalog.",
+    )
+    description: str | None = Field(
+        default=None,
+        description="Docstring-derived explanation of the callable, when available.",
+    )
+
+
+class CommandTypeListOutput(BaseModel):
+    """Registered Civarium command types."""
+
+    command_types: list[str] = Field(
+        description=(
+            "Registered command types accepted by submit_command when paired with a "
+            "payload matching the corresponding command spec."
+        ),
+    )
+
+
+class CommandTypeSpecOutput(BaseModel):
+    """Public specification for one registered Civarium command type."""
+
+    command_type: str = Field(
+        description="Registered Civarium command type.",
+    )
+    description: str | None = Field(
+        default=None,
+        description="Docstring-derived command payload description, when available.",
+    )
+    payload_schema: dict[str, Any] = Field(
+        description="JSON Schema for the command payload expected by the backend.",
+    )
+    events: list[str] = Field(
+        description=(
+            "Event types statically discovered from the command handler. This is "
+            "documentation of the current implementation, not a command execution result."
+        ),
+    )
+    validators: list[RuleCallableOutput] = Field(
+        description="Validators applied by the backend for this command type.",
+    )
+
+
+class EntityTypeListOutput(BaseModel):
+    """Registered Civarium entity types."""
+
+    entity_types: list[str] = Field(
+        description="Registered entity types that may appear in visible state snapshots.",
+    )
+
+
+class EntityTypeSpecOutput(BaseModel):
+    """Public specification for one registered Civarium entity type."""
+
+    entity_type: str = Field(
+        description="Registered Civarium entity type.",
+    )
+    description: str | None = Field(
+        default=None,
+        description="Docstring-derived entity description, when available.",
+    )
+    entity_schema: dict[str, Any] = Field(
+        description="JSON Schema for records in this entity library.",
+    )
+
+
+class EventTypeListOutput(BaseModel):
+    """Registered Civarium event types."""
+
+    event_types: list[str] = Field(
+        description="Registered event types emitted and projected by the backend.",
+    )
+
+
+class EventTypeSpecOutput(BaseModel):
+    """Public specification for one registered Civarium event type."""
+
+    event_type: str = Field(
+        description="Registered Civarium event type.",
+    )
+    description: str | None = Field(
+        default=None,
+        description="Docstring-derived event payload description, when available.",
+    )
+    payload_schema: dict[str, Any] = Field(
+        description="JSON Schema for the event payload expected by the backend.",
+    )
+    validators: list[RuleCallableOutput] = Field(
+        description="Validators applied by the backend for this event type.",
+    )
+    modificator: RuleCallableOutput = Field(
+        description="Projection callable that applies this event to world state.",
+    )
+
+
+class RuleCatalogResourcesOutput(BaseModel):
+    """MCP resource URIs for the Civarium rule catalog."""
+
+    catalog_uri: str = Field(
+        description="Canonical MCP resource URI for the compact rule catalog index.",
+    )
+    command_types_uri: str = Field(
+        description="MCP resource URI listing registered command types.",
+    )
+    command_spec_uri_template: str = Field(
+        description="MCP resource URI template for one command type specification.",
+    )
+    entity_types_uri: str = Field(
+        description="MCP resource URI listing registered entity types.",
+    )
+    entity_spec_uri_template: str = Field(
+        description="MCP resource URI template for one entity type specification.",
+    )
+    event_types_uri: str = Field(
+        description="MCP resource URI listing registered event types.",
+    )
+    event_spec_uri_template: str = Field(
+        description="MCP resource URI template for one event type specification.",
+    )
+
+
+class RuleCatalogIndexOutput(BaseModel):
+    """Compact index of the Civarium rule catalog exposed by the backend."""
+
+    resources: RuleCatalogResourcesOutput = Field(
+        description=(
+            "Canonical MCP resources and resource templates exposing the same rule "
+            "catalog data."
+        ),
+    )
+    command_types: list[str] = Field(
+        description="Registered command types.",
+    )
+    entity_types: list[str] = Field(
+        description="Registered entity types.",
+    )
+    event_types: list[str] = Field(
+        description="Registered event types.",
+    )
+
+
 class EntityLibraryOutput(BaseModel):
     """Visible entity library returned by Civarium."""
 
@@ -91,10 +236,9 @@ class EntityLibraryOutput(BaseModel):
     entities: dict[str, dict[str, Any]] = Field(
         default_factory=dict,
         description=(
-            "Visible entity records in this library, keyed by entity id. For example, a "
-            "`structure` library contains completed buildings with `owner` and `title`, "
-            "while a `construction` library contains unfinished building projects with "
-            "`owner`, `title`, and `rounds_to_complete`."
+            "Visible entity records in this library, keyed by entity id. Record shape "
+            "depends on the entity type; use get_civarium_entity_spec or the matching "
+            "`civarium://rules/entities/{entity_type}` resource for the current schema."
         ),
     )
 
@@ -130,10 +274,10 @@ class VisibleStateOutput(BaseModel):
     entities: dict[str, EntityLibraryOutput] = Field(
         default_factory=dict,
         description=(
-            "Dictionary of visible entity libraries by entity type. Current expected keys "
-            "are `construction` for unfinished building projects and `structure` for "
-            "completed buildings. The current backend uses owner-based visibility, so "
-            "only entities visible to the authenticated agent are included."
+            "Dictionary of visible entity libraries by entity type. Use "
+            "list_civarium_entity_types or `civarium://rules/entities` to discover "
+            "currently registered entity types; only entities visible to the "
+            "authenticated agent are included."
         ),
     )
 
@@ -164,9 +308,8 @@ class CommandReceivedOutput(BaseModel):
         default_factory=dict,
         description=(
             "Backend validation results keyed by rule or check name. Values explain "
-            "accepted constraints or validation failures for the submitted command. "
-            "Current construction validators are minimal type checks and may return "
-            "dummy check names."
+            "accepted constraints or validation failures for the submitted command. Use "
+            "get_civarium_command_spec for command validator metadata."
         ),
     )
 
@@ -182,16 +325,16 @@ class AcceptedCommandOutput(BaseModel):
     )
     command_type: str = Field(
         description=(
-            "Civarium command type, such as `construction_start`, that selected the "
-            "backend command handler."
+            "Civarium command type that selected the backend command handler. Discover "
+            "currently registered values with list_civarium_command_types."
         ),
     )
     payload: dict[str, Any] = Field(
         default_factory=dict,
         description=(
             "Command-specific payload accepted by the backend. Shape depends on "
-            "command_type and mirrors the agent's submitted intent; for "
-            "`construction_start`, current fields are `title` and `rounds_to_complete`."
+            "command_type and mirrors the agent's submitted intent; use "
+            "get_civarium_command_spec for the current payload schema."
         ),
     )
     created_at: datetime = Field(

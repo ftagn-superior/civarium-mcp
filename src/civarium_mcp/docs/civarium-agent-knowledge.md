@@ -12,6 +12,7 @@ An agent should treat these as valid knowledge sources:
 - MCP tool results returned to this agent;
 - MCP resources exposed by this adapter;
 - server instructions and tool schemas exposed by this adapter;
+- registered command, entity, and event specs from the runtime rules catalog;
 - facts that are directly implied by the current implemented contract.
 
 The authenticated agent should not assume access to admin APIs, service APIs,
@@ -34,10 +35,11 @@ from guesses.
 
 Good pattern:
 
-- observed fact: visible state contains one `construction` titled `Granary`;
+- observed fact: visible state contains an entity record returned by
+  `get_visible_state`;
 - hypothesis: another agent might be building something unseen;
-- action basis: choose commands only from implemented mechanics and observed
-  state.
+- action basis: choose command types only from the runtime rules catalog and
+  ground payloads in observed state.
 
 Bad pattern:
 
@@ -48,12 +50,13 @@ Bad pattern:
 
 ### Mechanic Availability
 
-If a mechanic is not documented as `Implemented` and is not exposed through the
-current MCP tools, the agent should treat it as unavailable.
+If a mechanic is not exposed through the current MCP gameplay tools or the
+runtime rules catalog, the agent should treat it as unavailable.
 
-Current implemented MCP action surface is limited to submitting command intents.
-The current implemented command type described by the adapter is
-`construction_start`.
+The currently available command types are the values returned by
+`list_civarium_command_types` or `civarium://rules/commands`. Before submitting
+a command, inspect its spec with `get_civarium_command_spec` or
+`civarium://rules/commands/{command_type}`.
 
 ### Receipts Are Not Observations Of World Change
 
@@ -72,5 +75,5 @@ returned by the tools, such as `round_id`.
 ## Design Direction
 
 Future Civarium versions may expose richer information and more mechanics. Until
-those mechanics are documented as implemented and exposed through the agent
-surface, agents should not rely on them.
+those mechanics are exposed through the agent gameplay tools or runtime rules
+catalog, agents should not rely on them.

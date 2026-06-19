@@ -20,6 +20,7 @@ from civarium_mcp.resources import (
     get_civarium_doc,
     load_civarium_doc,
     load_civarium_overview,
+    rule_catalog_resources,
 )
 from civarium_mcp.resources import (
     list_civarium_docs as list_civarium_doc_references,
@@ -32,6 +33,13 @@ from civarium_mcp.schemas import (
     CivariumDocOutput,
     CivariumDocSummaryOutput,
     CommandReceivedOutput,
+    CommandTypeListOutput,
+    CommandTypeSpecOutput,
+    EntityTypeListOutput,
+    EntityTypeSpecOutput,
+    EventTypeListOutput,
+    EventTypeSpecOutput,
+    RuleCatalogIndexOutput,
     VisibleStateOutput,
     WaitNextRoundOutput,
 )
@@ -68,9 +76,9 @@ CommandTypeParam = Annotated[
     str,
     Field(
         description=(
-            "Civarium command type to submit, for example `construction_start`; this "
-            "selects the backend command handler and expected payload shape. The current "
-            "implemented command type is `construction_start`."
+            "Civarium command type to submit. Use list_civarium_command_types and "
+            "get_civarium_command_spec to discover currently registered values and "
+            "their expected payload shapes."
         ),
     ),
 ]
@@ -80,7 +88,35 @@ CommandPayloadParam = Annotated[
         description=(
             "Command-specific payload describing the agent's intended game action. Shape "
             "depends on command_type and is validated by the Civarium backend command "
-            "registry. For `construction_start`, send `title` and `rounds_to_complete`."
+            "registry; inspect get_civarium_command_spec before submitting an unfamiliar "
+            "command type."
+        ),
+    ),
+]
+RuleCommandTypeParam = Annotated[
+    str,
+    Field(
+        description=(
+            "Registered Civarium command type to inspect. Use list_civarium_command_types "
+            "or get_civarium_rule_catalog to discover available values."
+        ),
+    ),
+]
+RuleEntityTypeParam = Annotated[
+    str,
+    Field(
+        description=(
+            "Registered Civarium entity type to inspect. Use list_civarium_entity_types "
+            "or get_civarium_rule_catalog to discover available values."
+        ),
+    ),
+]
+RuleEventTypeParam = Annotated[
+    str,
+    Field(
+        description=(
+            "Registered Civarium event type to inspect. Use list_civarium_event_types "
+            "or get_civarium_rule_catalog to discover available values."
         ),
     ),
 ]
@@ -133,6 +169,20 @@ def _doc_summary(doc: CivariumDocReference) -> CivariumDocSummaryOutput:
         title=doc.title,
         mime_type=doc.mime_type,
         description=doc.description,
+    )
+
+
+async def _rule_catalog_index(gateway: HttpCivariumGateway) -> RuleCatalogIndexOutput:
+    command_types, entity_types, event_types = await asyncio.gather(
+        gateway.list_command_types(),
+        gateway.list_entity_types(),
+        gateway.list_event_types(),
+    )
+    return RuleCatalogIndexOutput(
+        resources=rule_catalog_resources(),
+        command_types=command_types.command_types,
+        entity_types=entity_types.entity_types,
+        event_types=event_types.event_types,
     )
 
 
@@ -195,6 +245,90 @@ def register_tools(
 
     @server.tool(
         description=(
+            "Return a compact JSON index of the current Civarium rules catalog from the "
+            "backend: registered command, entity, and event types plus the canonical MCP "
+            "resource URIs for reading the same catalog through resources."
+        ),
+        annotations=READ_TOOL_ANNOTATIONS,
+        structured_output=True,
+    )
+    async def get_civarium_rule_catalog() -> RuleCatalogIndexOutput:
+        return await _rule_catalog_index(gateway)
+
+    @server.tool(
+        description=(
+            "List command types currently registered by the Civarium backend. Use "
+            "get_civarium_command_spec for the payload schema before submit_command."
+        ),
+        annotations=READ_TOOL_ANNOTATIONS,
+        structured_output=True,
+    )
+    async def list_civarium_command_types() -> CommandTypeListOutput:
+        return await gateway.list_command_types()
+
+    @server.tool(
+        description=(
+            "Read the backend rules catalog specification for one command type, including "
+            "payload JSON Schema, validators, and statically discovered emitted event types."
+        ),
+        annotations=READ_TOOL_ANNOTATIONS,
+        structured_output=True,
+    )
+    async def get_civarium_command_spec(
+        command_type: RuleCommandTypeParam,
+    ) -> CommandTypeSpecOutput:
+        return await gateway.get_command_spec(command_type)
+
+    @server.tool(
+        description=(
+            "List entity types currently registered by the Civarium backend. These are "
+            "the entity library keys that visible state snapshots may contain."
+        ),
+        annotations=READ_TOOL_ANNOTATIONS,
+        structured_output=True,
+    )
+    async def list_civarium_entity_types() -> EntityTypeListOutput:
+        return await gateway.list_entity_types()
+
+    @server.tool(
+        description=(
+            "Read the backend rules catalog specification for one entity type, including "
+            "the JSON Schema for records in that entity library."
+        ),
+        annotations=READ_TOOL_ANNOTATIONS,
+        structured_output=True,
+    )
+    async def get_civarium_entity_spec(
+        entity_type: RuleEntityTypeParam,
+    ) -> EntityTypeSpecOutput:
+        return await gateway.get_entity_spec(entity_type)
+
+    @server.tool(
+        description=(
+            "List event types currently registered by the Civarium backend. Events are "
+            "backend facts projected into world state; agents cannot submit them directly."
+        ),
+        annotations=READ_TOOL_ANNOTATIONS,
+        structured_output=True,
+    )
+    async def list_civarium_event_types() -> EventTypeListOutput:
+        return await gateway.list_event_types()
+
+    @server.tool(
+        description=(
+            "Read the backend rules catalog specification for one event type, including "
+            "payload JSON Schema, validators, and projection modificator metadata."
+        ),
+        annotations=READ_TOOL_ANNOTATIONS,
+        structured_output=True,
+    )
+    async def get_civarium_event_spec(
+        event_type: RuleEventTypeParam,
+    ) -> EventTypeSpecOutput:
+        return await gateway.get_event_spec(event_type)
+
+    @server.tool(
+        description=(
             "Return the active Civarium round for the authenticated agent. Use this to "
             "know which round is currently open for the agent's decisions."
         ),
@@ -208,7 +342,8 @@ def register_tools(
         description=(
             "Return the visible Civarium state for the authenticated agent. This is the "
             "agent's observable slice of the world; hidden or unseen state is not included. "
-            "Current entity libraries include `construction` and `structure`."
+            "Use list_civarium_entity_types and get_civarium_entity_spec to inspect "
+            "currently registered entity libraries."
         ),
         annotations=READ_TOOL_ANNOTATIONS,
         structured_output=True,
@@ -220,8 +355,8 @@ def register_tools(
         description=(
             "Submit a command intent for the authenticated agent in a round. The command "
             "is recorded for backend validation and later round execution; it is not an "
-            "immediate mutation of the world. The current implemented command type is "
-            "`construction_start`, with payload fields `title` and `rounds_to_complete`."
+            "immediate mutation of the world. Use get_civarium_command_spec to inspect "
+            "the payload schema before submitting a command type."
         ),
         annotations=WRITE_TOOL_ANNOTATIONS,
         structured_output=True,

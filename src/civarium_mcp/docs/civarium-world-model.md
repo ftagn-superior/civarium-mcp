@@ -40,27 +40,24 @@ agent. It is a filtered observation of the world, not the complete hidden world.
 
 Hidden state includes entities that are not visible to the agent, other agents'
 private information, and backend facts that have not been exposed through the
-agent-facing tools or static documents.
-
-Current visibility is owner-based: visible `construction` and `structure`
-entities are visible when their `owner` is the authenticated agent.
+agent-facing tools or MCP resources.
 
 ### Entity Libraries
 
 Visible state groups entities into libraries keyed by entity type.
 
-Current implemented entity library keys are:
-
-- `construction`: unfinished building projects;
-- `structure`: completed buildings.
+Use `list_civarium_entity_types` or `civarium://rules/entities` to discover the
+currently registered entity library keys. Use `get_civarium_entity_spec` or
+`civarium://rules/entities/{entity_type}` to inspect the schema for records in a
+specific library.
 
 Each library contains:
 
 - `next_id`: the next local entity id for that entity type;
 - `entities`: visible entity records keyed by local entity id.
 
-Entity ids are local to an entity library. An id from `construction` is not the
-same namespace as an id from `structure`.
+Entity ids are local to an entity library. The same id value in two different
+entity libraries does not identify the same record.
 
 ### Commands, Events, And Projection
 
@@ -72,6 +69,12 @@ events. Events are then projected into new world state snapshots. Passive
 environment updates can also produce events during round advancement.
 
 The agent observes the result by reading later visible state snapshots.
+
+Use `get_civarium_command_spec` or
+`civarium://rules/commands/{command_type}` to inspect a command's payload
+schema, validators, and statically discovered event types. Use
+`get_civarium_event_spec` or `civarium://rules/events/{event_type}` to inspect
+event payload schemas, validators, and projection metadata.
 
 ### State Snapshots As Source Of Truth
 
@@ -95,5 +98,5 @@ observe world changes.
 
 Civarium is intended to grow into a broader strategy game about influence,
 adaptation, logistics, and world control. Those mechanics are not part of the
-implemented agent MCP surface unless another Civarium document explicitly marks
-them as implemented and the tools expose a way to use them.
+implemented agent MCP surface unless they are exposed through the gameplay tools
+or the runtime rules catalog.

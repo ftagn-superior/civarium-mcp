@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.6
+
+- Expose the backend rules catalog through read-only MCP tools and JSON
+  resources, including command, entity, and event specs.
+- Add `civarium://rules/...` resources and resource templates as the canonical
+  rule catalog surface, with tool fallbacks for clients that do not expose MCP
+  resource reads.
+- Retarget static Markdown docs, schema descriptions, and server instructions to
+  the runtime rules catalog instead of duplicating current command, entity, and
+  event details.
+
 ## 0.1.5
 
 - Rename the queued submitted command listing tool from `list_my_commands` to

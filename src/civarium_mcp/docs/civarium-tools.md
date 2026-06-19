@@ -20,9 +20,9 @@ recorded, validated, and, if accepted, queued for later execution when the round
 advances. Later visible state snapshots are the source of truth for world
 changes.
 
-Current visible entity libraries use `construction` for unfinished building
-projects and `structure` for completed buildings. Current visibility is
-owner-based in the backend.
+The runtime rules catalog is the source of truth for currently registered
+command types, payload schemas, entity types, entity schemas, event types,
+validators, and projection metadata.
 
 ## Tool Reference
 
@@ -37,6 +37,89 @@ what Civarium is and how to interpret the MCP server.
 
 Resource-aware clients should prefer reading `civarium://docs/overview`
 directly.
+
+### `list_civarium_docs`
+
+Read-only documentation tool. It lists the packaged Civarium Markdown documents
+available through tool calls and MCP resources.
+
+Game meaning: no world state is read or changed. Use this when the client does
+not expose MCP resource discovery to the agent.
+
+### `read_civarium_doc`
+
+Read-only documentation tool. It reads one packaged Civarium Markdown document
+by `doc_id`.
+
+Game meaning: no world state is read or changed. This is a tool fallback for
+clients that do not expose MCP resource reads.
+
+### `get_civarium_rule_catalog`
+
+Read-only rules tool. It returns a compact index of the registered command,
+entity, and event types reported by the backend rules catalog.
+
+Game meaning: this reads the current implemented rule surface. It does not read
+hidden state and does not execute rules.
+
+Important output:
+
+- `command_types`: command types accepted by the backend command registry;
+- `entity_types`: entity library types that visible state may contain;
+- `event_types`: event types registered by the projection pipeline;
+- `resources`: canonical `civarium://rules/...` resource URIs for the same
+  catalog.
+
+Resource-aware clients can read `civarium://rules/catalog` directly.
+
+### `list_civarium_command_types`
+
+Read-only rules tool. It lists command types currently registered by the
+backend.
+
+Use `get_civarium_command_spec` before submitting an unfamiliar command type.
+
+### `get_civarium_command_spec`
+
+Read-only rules tool. It reads one command type specification.
+
+Important output:
+
+- `payload_schema`: JSON Schema for the command payload;
+- `events`: event types statically discovered from the command handler;
+- `validators`: backend validator metadata.
+
+Resource-aware clients can read
+`civarium://rules/commands/{command_type}` directly.
+
+### `list_civarium_entity_types`
+
+Read-only rules tool. It lists entity types currently registered by the backend.
+
+### `get_civarium_entity_spec`
+
+Read-only rules tool. It reads one entity type specification, including the JSON
+Schema for records in that entity library.
+
+Resource-aware clients can read `civarium://rules/entities/{entity_type}`
+directly.
+
+### `list_civarium_event_types`
+
+Read-only rules tool. It lists event types currently registered by the backend.
+Agents cannot submit events directly.
+
+### `get_civarium_event_spec`
+
+Read-only rules tool. It reads one event type specification.
+
+Important output:
+
+- `payload_schema`: JSON Schema for the event payload;
+- `validators`: backend validator metadata;
+- `modificator`: projection callable metadata.
+
+Resource-aware clients can read `civarium://rules/events/{event_type}` directly.
 
 ### `get_active_round`
 
@@ -65,7 +148,8 @@ Important output:
 - `round_id`: round UUID for the visible state snapshot;
 - `entities`: visible entity libraries keyed by entity type.
 
-Current expected entity library keys are `construction` and `structure`.
+Use `list_civarium_entity_types` and `get_civarium_entity_spec` to inspect the
+current entity catalog.
 
 ### `submit_command`
 
@@ -81,10 +165,8 @@ Important input:
 - `command_type`: backend command handler name;
 - `payload`: command-specific action payload.
 
-The current implemented command type is `construction_start`. Its payload uses:
-
-- `title`: building title;
-- `rounds_to_complete`: number of rounds before completion.
+Use `list_civarium_command_types` and `get_civarium_command_spec` to inspect the
+current command catalog and payload schema before submitting.
 
 Important output:
 
@@ -137,11 +219,14 @@ Important output:
 
 1. Read `civarium://docs/overview` and this document if the client supports MCP
    resources. If not, call `get_civarium_context` for the high-level overview.
-2. Call `get_active_round`.
-3. Call `get_visible_state`.
-4. Reason from the visible state and implemented command surface.
-5. Submit a command intent with `submit_command` when action is appropriate.
-6. Use `list_queued_submitted_commands` to confirm which intents were admitted
+2. Call `get_civarium_rule_catalog`, or read `civarium://rules/catalog`, when
+   you need the live command, entity, or event catalog.
+3. Call `get_active_round`.
+4. Call `get_visible_state`.
+5. Reason from the visible state and implemented command surface.
+6. Read the relevant command spec before constructing a new command payload.
+7. Submit a command intent with `submit_command` when action is appropriate.
+8. Use `list_queued_submitted_commands` to confirm which intents were admitted
    for execution.
-7. Use `wait_next_round` when the agent should wait for the next decision
+9. Use `wait_next_round` when the agent should wait for the next decision
    window, then read visible state again.

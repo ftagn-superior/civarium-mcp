@@ -15,6 +15,12 @@ from civarium_mcp.schemas import (
     AcceptedCommandListOutput,
     AgentRoundOutput,
     CommandReceivedOutput,
+    CommandTypeListOutput,
+    CommandTypeSpecOutput,
+    EntityTypeListOutput,
+    EntityTypeSpecOutput,
+    EventTypeListOutput,
+    EventTypeSpecOutput,
     VisibleStateOutput,
 )
 
@@ -22,10 +28,14 @@ _ROUND_COMMANDS_PATH_RE = re.compile(
     r"^agent/rounds/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-"
     r"[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/commands$",
 )
+_RULE_SPEC_PATH_RE = re.compile(r"^rules/(commands|entities|events)/[A-Za-z0-9_-]+$")
 _ALLOWED_STATIC_ENDPOINTS = {
     ("GET", "agent/round"),
     ("GET", "agent/state"),
     ("POST", "agent/commands"),
+    ("GET", "rules/commands"),
+    ("GET", "rules/entities"),
+    ("GET", "rules/events"),
 }
 
 
@@ -60,6 +70,39 @@ class HttpCivariumGateway:
     def api_base_url(self) -> str:
         """Return the normalized `/api/v1/` base URL used by httpx."""
         return f"{self._config.base_url}/api/v1/"
+
+    async def list_command_types(self) -> CommandTypeListOutput:
+        """Call `GET /api/v1/rules/commands`."""
+        data = await self._request("GET", "rules/commands")
+        return self._validate_output(CommandTypeListOutput, data, "rules/commands")
+
+    async def get_command_spec(self, command_type: str) -> CommandTypeSpecOutput:
+        """Call `GET /api/v1/rules/commands/{command_type}`."""
+        path = f"rules/commands/{command_type}"
+        data = await self._request("GET", path)
+        return self._validate_output(CommandTypeSpecOutput, data, path)
+
+    async def list_entity_types(self) -> EntityTypeListOutput:
+        """Call `GET /api/v1/rules/entities`."""
+        data = await self._request("GET", "rules/entities")
+        return self._validate_output(EntityTypeListOutput, data, "rules/entities")
+
+    async def get_entity_spec(self, entity_type: str) -> EntityTypeSpecOutput:
+        """Call `GET /api/v1/rules/entities/{entity_type}`."""
+        path = f"rules/entities/{entity_type}"
+        data = await self._request("GET", path)
+        return self._validate_output(EntityTypeSpecOutput, data, path)
+
+    async def list_event_types(self) -> EventTypeListOutput:
+        """Call `GET /api/v1/rules/events`."""
+        data = await self._request("GET", "rules/events")
+        return self._validate_output(EventTypeListOutput, data, "rules/events")
+
+    async def get_event_spec(self, event_type: str) -> EventTypeSpecOutput:
+        """Call `GET /api/v1/rules/events/{event_type}`."""
+        path = f"rules/events/{event_type}"
+        data = await self._request("GET", path)
+        return self._validate_output(EventTypeSpecOutput, data, path)
 
     async def get_active_round(self) -> AgentRoundOutput:
         """Call `GET /api/v1/agent/round`."""
@@ -154,6 +197,8 @@ class HttpCivariumGateway:
         if endpoint in _ALLOWED_STATIC_ENDPOINTS:
             return
         if method.upper() == "GET" and _ROUND_COMMANDS_PATH_RE.match(path):
+            return
+        if method.upper() == "GET" and _RULE_SPEC_PATH_RE.match(path):
             return
         raise CivariumApiError(path=path, message="endpoint is not allowed by adapter policy")
 
