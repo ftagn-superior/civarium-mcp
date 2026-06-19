@@ -86,7 +86,9 @@ async def test_submit_command_forwards_body_without_identity_fields(adapter_conf
     assert receipt.checks == {"enough_resources": "failed"}
 
 
-async def test_list_my_commands_omits_backend_agent_id(adapter_config) -> None:
+async def test_list_queued_submitted_commands_omits_backend_agent_id(
+    adapter_config,
+) -> None:
     async def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
             200,
@@ -107,7 +109,7 @@ async def test_list_my_commands_omits_backend_agent_id(adapter_config) -> None:
 
     gateway = HttpCivariumGateway(adapter_config, transport=httpx.MockTransport(handler))
 
-    result = await gateway.list_my_commands(ROUND_ID)
+    result = await gateway.list_queued_submitted_commands(ROUND_ID)
 
     assert result.round_id == ROUND_ID
     assert not hasattr(result, "agent_id")

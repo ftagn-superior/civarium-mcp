@@ -20,7 +20,8 @@ clients do not pass `agent_id` or `session_id` as tool input.
 - `get_visible_state` - return the agent's visible slice of the world.
 - `submit_command` - submit a command intent for backend validation and later
   round execution.
-- `list_my_commands` - list valid commands queued for the agent in a round.
+- `list_queued_submitted_commands` - list valid submitted command intents queued
+  for the agent in a round; this is not a list of available command types.
 - `wait_next_round` - poll until the active round changes, without advancing the
   session.
 
@@ -106,7 +107,7 @@ Preferred public configuration uses a pinned `uvx` package:
 mcp_servers:
   civarium:
     command: "uvx"
-    args: ["civarium-mcp@0.1.4"]
+    args: ["civarium-mcp@0.1.5"]
     env:
       CIVARIUM_BASE_URL: "https://api.civarium.example"
       CIVARIUM_AGENT_API_KEY: "<agent key>"
@@ -120,7 +121,7 @@ mcp_servers:
         - get_active_round
         - get_visible_state
         - submit_command
-        - list_my_commands
+        - list_queued_submitted_commands
         - wait_next_round
         - get_civarium_context
         - list_civarium_docs
@@ -147,7 +148,7 @@ mcp_servers:
         - get_active_round
         - get_visible_state
         - submit_command
-        - list_my_commands
+        - list_queued_submitted_commands
         - wait_next_round
         - get_civarium_context
         - list_civarium_docs
@@ -171,8 +172,8 @@ To publish a new version:
 uv run ruff check
 uv run pytest
 uv build --no-sources
-git tag v0.1.4
-git push origin v0.1.4
+git tag v0.1.5
+git push origin v0.1.5
 ```
 
 The release workflow verifies that the Git tag matches the version in
@@ -180,7 +181,7 @@ The release workflow verifies that the Git tag matches the version in
 PyPI. After PyPI accepts the release, users can run the adapter with:
 
 ```bash
-uvx civarium-mcp@0.1.4 --version
+uvx civarium-mcp@0.1.5 --version
 ```
 
 ## Development

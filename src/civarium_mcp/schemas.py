@@ -172,10 +172,10 @@ class CommandReceivedOutput(BaseModel):
 
 
 class AcceptedCommandOutput(BaseModel):
-    """Valid command queued for the authenticated agent in a round."""
+    """Valid submitted command queued for the authenticated agent in a round."""
 
     command_id: UUID = Field(
-        description="Backend UUID of a valid command queued for this agent.",
+        description="Backend UUID of a valid submitted command queued for this agent.",
     )
     client_command_id: UUID = Field(
         description="Caller-generated UUID originally supplied with the command intent.",
@@ -200,17 +200,18 @@ class AcceptedCommandOutput(BaseModel):
 
 
 class AcceptedCommandListOutput(BaseModel):
-    """Valid commands queued for the authenticated agent in one round."""
+    """Valid submitted commands queued for the authenticated agent in one round."""
 
     round_id: UUID = Field(
-        description="Round UUID whose accepted commands are listed.",
+        description="Round UUID whose accepted submitted commands are listed.",
     )
     commands: list[AcceptedCommandOutput] = Field(
         default_factory=list,
         description=(
-            "Valid commands admitted for later execution for the authenticated agent in "
-            "this round. These are queued intents, not proof that world state has changed "
-            "yet; invalid submissions may have receipts but are not included here."
+            "Valid submitted commands admitted for later execution for the authenticated "
+            "agent in this round. These are queued intents, not available command types "
+            "and not proof that world state has changed yet; invalid submissions may "
+            "have receipts but are not included here."
         ),
     )
 

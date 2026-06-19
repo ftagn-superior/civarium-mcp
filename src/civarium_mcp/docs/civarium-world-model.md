@@ -86,9 +86,10 @@ world change itself is confirmed by a later visible state snapshot.
 agent's intent for that round. The world changes when the backend advances the
 round and applies valid commands through events and projection.
 
-After submitting a command, use `list_my_commands` to confirm whether it was
-queued, then wait for the next round and read visible state again to observe
-world changes.
+After submitting a command, use `list_queued_submitted_commands` to confirm
+whether it was queued. This tool lists queued submitted intents, not available
+command types. Then wait for the next round and read visible state again to
+observe world changes.
 
 ## Design Direction
 

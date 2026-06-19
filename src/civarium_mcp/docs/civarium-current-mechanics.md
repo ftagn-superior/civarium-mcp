@@ -12,7 +12,7 @@ The current implemented loop is a construction loop:
 1. Read the active round with `get_active_round`.
 2. Read visible state with `get_visible_state`.
 3. Submit a `construction_start` command intent when appropriate.
-4. Confirm valid queued commands with `list_my_commands`.
+4. Confirm valid queued submitted commands with `list_queued_submitted_commands`.
 5. Wait for the active round to change with `wait_next_round`.
 6. Read visible state again to observe resulting changes.
 

@@ -241,16 +241,19 @@ def register_tools(
 
     @server.tool(
         description=(
-            "List valid commands admitted for execution for the authenticated agent in a "
-            "Civarium round. Use this to confirm which command intents are queued for "
-            "that round; invalid submissions can still have receipts but are not listed "
-            "here."
+            "List submitted command intents that the backend has validated and queued "
+            "for later execution for the authenticated agent in a Civarium round. Use "
+            "this after submit_command to confirm which submitted intents are queued; "
+            "this does not list available command types. Invalid submissions can still "
+            "have receipts but are not listed here."
         ),
         annotations=READ_TOOL_ANNOTATIONS,
         structured_output=True,
     )
-    async def list_my_commands(round_id: RoundIdParam) -> AcceptedCommandListOutput:
-        return await gateway.list_my_commands(round_id)
+    async def list_queued_submitted_commands(
+        round_id: RoundIdParam,
+    ) -> AcceptedCommandListOutput:
+        return await gateway.list_queued_submitted_commands(round_id)
 
     @server.tool(
         description=(

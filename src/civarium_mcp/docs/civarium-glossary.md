@@ -66,8 +66,9 @@ Checks explain accepted constraints or validation failures.
 
 ### Queued Command
 
-A valid command admitted for later execution in a round. `list_my_commands`
-returns valid queued commands for the authenticated agent and round.
+A valid submitted command admitted for later execution in a round.
+`list_queued_submitted_commands` returns valid queued submitted commands for the
+authenticated agent and round; it does not list available command types.
 
 ### Event
 

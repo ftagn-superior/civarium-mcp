@@ -27,7 +27,7 @@ EXPECTED_TOOLS = {
     "get_active_round",
     "get_visible_state",
     "submit_command",
-    "list_my_commands",
+    "list_queued_submitted_commands",
     "wait_next_round",
 }
 EXPECTED_DOC_IDS = {doc.doc_id for doc in list_civarium_docs()}
@@ -64,7 +64,10 @@ class FakeGateway:
             checks={"rule": "failed"},
         )
 
-    async def list_my_commands(self, round_id: UUID) -> AcceptedCommandListOutput:
+    async def list_queued_submitted_commands(
+        self,
+        round_id: UUID,
+    ) -> AcceptedCommandListOutput:
         return AcceptedCommandListOutput(
             round_id=round_id,
             commands=[
@@ -117,10 +120,12 @@ async def test_server_exposes_only_expected_tools(adapter_config) -> None:
     assert "command intent" in tools_by_name["submit_command"].description
     assert "not an immediate mutation" in tools_by_name["submit_command"].description
     assert "`construction_start`" in tools_by_name["submit_command"].description
-    assert "valid commands admitted for execution" in tools_by_name["list_my_commands"].description
+    assert "submitted command intents" in tools_by_name[
+        "list_queued_submitted_commands"
+    ].description
     assert (
-        "invalid submissions can still have receipts"
-        in tools_by_name["list_my_commands"].description
+        "does not list available command types"
+        in tools_by_name["list_queued_submitted_commands"].description
     )
     assert "never advances the Civarium session" in tools_by_name["wait_next_round"].description
 

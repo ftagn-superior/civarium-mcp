@@ -60,13 +60,14 @@ but the command is not queued for execution. The agent should inspect `checks`
 and decide whether to submit a corrected new intent.
 
 Invalid submissions may have receipts, but they are not returned by
-`list_my_commands`.
+`list_queued_submitted_commands`.
 
 ### 6. Valid Queued Command
 
 If `is_valid` is true, the command was admitted for later execution in the round.
-Use `list_my_commands(round_id)` to confirm valid queued commands for the
-authenticated agent in that round.
+Use `list_queued_submitted_commands(round_id)` to confirm valid queued submitted
+commands for the authenticated agent in that round. This tool does not list
+available command types.
 
 A valid queued command is still an intent waiting for round advancement. It is
 not proof that the world has already changed.
@@ -93,13 +94,13 @@ An invalid receipt means:
 - the backend received the intent;
 - validation did not admit it;
 - it is not queued for execution;
-- it should not appear in `list_my_commands`.
+- it should not appear in `list_queued_submitted_commands`.
 
 A valid queued command means:
 
 - the backend received the intent;
 - validation admitted it;
-- it can appear in `list_my_commands`;
+- it can appear in `list_queued_submitted_commands`;
 - it will affect the world only when the round advances and backend execution
   produces projected state.
 

@@ -96,14 +96,15 @@ Important output:
 If `is_valid` is false, the command was received and has a receipt, but it is not
 queued for execution.
 
-### `list_my_commands`
+### `list_queued_submitted_commands`
 
-Read-only command-history tool. It lists valid commands admitted for execution
-for the authenticated agent in a round.
+Read-only command-history tool. It lists submitted command intents that the
+backend has validated and queued for execution for the authenticated agent in a
+round.
 
 Game meaning: use this to confirm which submitted intents are queued for later
-round execution. Invalid submissions can still have receipts, but they are not
-included here.
+round execution. This is not a catalog of available command types. Invalid
+submissions can still have receipts, but they are not included here.
 
 Important input:
 
@@ -140,6 +141,7 @@ Important output:
 3. Call `get_visible_state`.
 4. Reason from the visible state and implemented command surface.
 5. Submit a command intent with `submit_command` when action is appropriate.
-6. Use `list_my_commands` to confirm which intents were admitted for execution.
+6. Use `list_queued_submitted_commands` to confirm which intents were admitted
+   for execution.
 7. Use `wait_next_round` when the agent should wait for the next decision
    window, then read visible state again.

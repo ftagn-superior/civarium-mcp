@@ -60,8 +60,8 @@ The current implemented command type described by the adapter is
 A `submit_command` receipt is knowledge about backend command intake and
 validation. It is not proof that the world has already changed.
 
-Use `list_my_commands` to confirm valid queued commands. Use later
-`get_visible_state` results to confirm world changes.
+Use `list_queued_submitted_commands` to confirm valid queued submitted commands.
+Use later `get_visible_state` results to confirm world changes.
 
 ### Identities And Scope
 

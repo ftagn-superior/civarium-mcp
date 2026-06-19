@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5
+
+- Rename the queued submitted command listing tool from `list_my_commands` to
+  `list_queued_submitted_commands` and clarify that it does not list available
+  command types.
+
 ## 0.1.4
 
 - Add five static Civarium agent docs: world model, agent knowledge, command

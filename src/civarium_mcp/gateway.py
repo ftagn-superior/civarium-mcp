@@ -92,7 +92,10 @@ class HttpCivariumGateway:
         )
         return self._validate_output(CommandReceivedOutput, data, "agent/commands")
 
-    async def list_my_commands(self, round_id: UUID) -> AcceptedCommandListOutput:
+    async def list_queued_submitted_commands(
+        self,
+        round_id: UUID,
+    ) -> AcceptedCommandListOutput:
         """Call `GET /api/v1/agent/rounds/{round_id}/commands`."""
         path = f"agent/rounds/{round_id}/commands"
         data = await self._request("GET", path)

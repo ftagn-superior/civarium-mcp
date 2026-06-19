@@ -1,6 +1,6 @@
 [project]
 name = "civarium-mcp"
-version = "0.1.4"
+version = "0.1.5"
 description = "Hermes-compatible local MCP adapter for Civarium agent HTTP APIs."
 readme = "README.md"
 authors = [
