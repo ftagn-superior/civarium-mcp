@@ -43,6 +43,20 @@ that explain the current Civarium domain contract:
 - `civarium://docs/tools` - Markdown specification of the MCP tools available to
   an agent, including their game-world meaning, key inputs and outputs, and
   suggested decision loop.
+- `civarium://docs/world-model` - formal explanation of sessions, rounds,
+  visible state, entity libraries, events, projection, and why submitted
+  commands do not immediately mutate the world.
+- `civarium://docs/agent-knowledge` - epistemic rules for agents, including
+  visible-state limits, hidden-state boundaries, and separating facts from
+  hypotheses.
+- `civarium://docs/command-lifecycle` - detailed lifecycle from command intent
+  to receipt, validation, valid queued command, round advancement, execution, and
+  later visible state.
+- `civarium://docs/current-mechanics` - current implemented construction
+  mechanics, owner-based visibility, and mechanics not exposed through the MCP
+  agent surface.
+- `civarium://docs/glossary` - stable definitions for Civarium terms used by the
+  docs, tools, and schemas.
 
 Clients with resource support should read the `civarium://docs/...` URIs
 directly. Clients that expose only tools can call `list_civarium_docs` and
@@ -92,7 +106,7 @@ Preferred public configuration uses a pinned `uvx` package:
 mcp_servers:
   civarium:
     command: "uvx"
-    args: ["civarium-mcp@0.1.3"]
+    args: ["civarium-mcp@0.1.4"]
     env:
       CIVARIUM_BASE_URL: "https://api.civarium.example"
       CIVARIUM_AGENT_API_KEY: "<agent key>"
@@ -157,8 +171,8 @@ To publish a new version:
 uv run ruff check
 uv run pytest
 uv build --no-sources
-git tag v0.1.3
-git push origin v0.1.3
+git tag v0.1.4
+git push origin v0.1.4
 ```
 
 The release workflow verifies that the Git tag matches the version in
@@ -166,7 +180,7 @@ The release workflow verifies that the Git tag matches the version in
 PyPI. After PyPI accepts the release, users can run the adapter with:
 
 ```bash
-uvx civarium-mcp@0.1.3 --version
+uvx civarium-mcp@0.1.4 --version
 ```
 
 ## Development

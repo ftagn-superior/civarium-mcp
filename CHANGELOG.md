@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.4
+
+- Add five static Civarium agent docs: world model, agent knowledge, command
+  lifecycle, current mechanics, and glossary.
+- Expose the new docs both as MCP resources and through `list_civarium_docs` /
+  `read_civarium_doc`.
+- Make static doc descriptions more routing-friendly for clients choosing which
+  document to read next.
+
 ## 0.1.3
 
 - Add `list_civarium_docs` and `read_civarium_doc` read-only tools so clients

@@ -95,11 +95,19 @@ TimeoutParam = Annotated[
     ),
 ]
 DocIdParam = Annotated[
-    Literal["overview", "tools"],
+    Literal[
+        "overview",
+        "tools",
+        "world-model",
+        "agent-knowledge",
+        "command-lifecycle",
+        "current-mechanics",
+        "glossary",
+    ],
     Field(
         description=(
             "Static Civarium document id to read. Use list_civarium_docs first when "
-            "discovering available documentation. Current ids are `overview` and `tools`."
+            "discovering available documentation."
         ),
     ),
 ]

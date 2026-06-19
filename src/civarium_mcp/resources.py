@@ -30,9 +30,8 @@ CIVARIUM_DOCS: tuple[CivariumDocReference, ...] = (
         mime_type="text/markdown",
         filename="civarium-overview.md",
         description=(
-            "Canonical high-level Markdown overview explaining what Civarium is, "
-            "how agents relate to the game world, and how to interpret rounds, "
-            "visible state, and command intents."
+            "Read this first when you need the high-level Civarium premise, agent role, "
+            "rounds, visible state, and command intent semantics."
         ),
     ),
     CivariumDocReference(
@@ -43,9 +42,74 @@ CIVARIUM_DOCS: tuple[CivariumDocReference, ...] = (
         mime_type="text/markdown",
         filename="civarium-tools.md",
         description=(
-            "Markdown specification of the MCP tools available to a Civarium agent, "
-            "including their game-world meaning, key inputs, outputs, and suggested "
-            "decision loop."
+            "Read this when you need the available MCP tools, their inputs and outputs, "
+            "and the recommended decision loop for playing through Hermes or another "
+            "client."
+        ),
+    ),
+    CivariumDocReference(
+        doc_id="world-model",
+        uri="civarium://docs/world-model",
+        name="civarium_world_model",
+        title="Civarium World Model",
+        mime_type="text/markdown",
+        filename="civarium-world-model.md",
+        description=(
+            "Read this when you need to understand sessions, active rounds, visible "
+            "versus hidden state, entity libraries, events, projection, and why submit "
+            "does not mutate state."
+        ),
+    ),
+    CivariumDocReference(
+        doc_id="agent-knowledge",
+        uri="civarium://docs/agent-knowledge",
+        name="civarium_agent_knowledge",
+        title="Civarium Agent Knowledge",
+        mime_type="text/markdown",
+        filename="civarium-agent-knowledge.md",
+        description=(
+            "Read this when you need the agent's knowledge boundaries: what counts as "
+            "observed fact, what stays hidden, and how to keep hypotheses separate from "
+            "backend facts."
+        ),
+    ),
+    CivariumDocReference(
+        doc_id="command-lifecycle",
+        uri="civarium://docs/command-lifecycle",
+        name="civarium_command_lifecycle",
+        title="Civarium Command Lifecycle",
+        mime_type="text/markdown",
+        filename="civarium-command-lifecycle.md",
+        description=(
+            "Read this when you need to reason about command drafts, submit_command "
+            "receipts, validation checks, queued commands, round advancement, "
+            "execution, and later visible state."
+        ),
+    ),
+    CivariumDocReference(
+        doc_id="current-mechanics",
+        uri="civarium://docs/current-mechanics",
+        name="civarium_current_mechanics",
+        title="Civarium Current Mechanics",
+        mime_type="text/markdown",
+        filename="civarium-current-mechanics.md",
+        description=(
+            "Read this when you need the current implemented mechanics: "
+            "construction_start, construction, structure, owner-based visibility, and "
+            "mechanics not available through MCP."
+        ),
+    ),
+    CivariumDocReference(
+        doc_id="glossary",
+        uri="civarium://docs/glossary",
+        name="civarium_glossary",
+        title="Civarium Glossary",
+        mime_type="text/markdown",
+        filename="civarium-glossary.md",
+        description=(
+            "Read this when you need stable definitions for Civarium terms such as "
+            "agent, session, round, visible state, command intent, receipt, event, and "
+            "projection."
         ),
     ),
 )

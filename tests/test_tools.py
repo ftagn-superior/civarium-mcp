@@ -7,7 +7,11 @@ from uuid import UUID
 from support import CLIENT_COMMAND_ID, COMMAND_ID, NEXT_ROUND_ID, ROUND_ID, SESSION_ID
 
 from civarium_mcp.instructions import CIVARIUM_INSTRUCTIONS
-from civarium_mcp.resources import OVERVIEW_RESOURCE_URI, TOOLS_RESOURCE_URI
+from civarium_mcp.resources import (
+    OVERVIEW_RESOURCE_URI,
+    TOOLS_RESOURCE_URI,
+    list_civarium_docs,
+)
 from civarium_mcp.schemas import (
     AcceptedCommandListOutput,
     AgentRoundOutput,
@@ -26,6 +30,9 @@ EXPECTED_TOOLS = {
     "list_my_commands",
     "wait_next_round",
 }
+EXPECTED_DOC_IDS = {doc.doc_id for doc in list_civarium_docs()}
+EXPECTED_DOC_RESOURCE_NAMES = {doc.name for doc in list_civarium_docs()}
+EXPECTED_DOC_ID_SCHEMA_ENUM = [doc.doc_id for doc in list_civarium_docs()]
 
 
 class FakeGateway:
@@ -130,7 +137,7 @@ async def test_server_exposes_only_expected_tools(adapter_config) -> None:
     assert "never used to advance the session" in wait_properties["timeout_seconds"]["description"]
 
     read_doc_properties = tools_by_name["read_civarium_doc"].inputSchema["properties"]
-    assert read_doc_properties["doc_id"]["enum"] == ["overview", "tools"]
+    assert read_doc_properties["doc_id"]["enum"] == EXPECTED_DOC_ID_SCHEMA_ENUM
     assert "Static Civarium document id" in read_doc_properties["doc_id"]["description"]
 
     for tool_name in EXPECTED_TOOLS - {"submit_command"}:
@@ -143,22 +150,19 @@ async def test_server_exposes_only_expected_tools(adapter_config) -> None:
 
     assert await server.list_prompts() == []
     resources = await server.list_resources()
-    assert {resource.name for resource in resources} == {
-        "civarium_overview",
-        "civarium_tools",
-    }
+    assert {resource.name for resource in resources} == EXPECTED_DOC_RESOURCE_NAMES
     resources_by_name = {resource.name: resource for resource in resources}
     overview_resource = resources_by_name["civarium_overview"]
     assert str(overview_resource.uri) == OVERVIEW_RESOURCE_URI
     assert overview_resource.mimeType == "text/markdown"
     assert overview_resource.description is not None
-    assert "high-level Markdown overview" in overview_resource.description
+    assert "high-level Civarium premise" in overview_resource.description
 
     tools_resource = resources_by_name["civarium_tools"]
     assert str(tools_resource.uri) == TOOLS_RESOURCE_URI
     assert tools_resource.mimeType == "text/markdown"
     assert tools_resource.description is not None
-    assert "MCP tools available to a Civarium agent" in tools_resource.description
+    assert "available MCP tools" in tools_resource.description
 
 
 async def test_civarium_context_available_as_tool_and_resource(adapter_config) -> None:
@@ -186,12 +190,20 @@ async def test_civarium_docs_available_through_tools(adapter_config) -> None:
     list_result = await server.call_tool("list_civarium_docs", {})
     list_output = structured_content(list_result)
 
-    assert {doc["doc_id"] for doc in list_output["docs"]} == {"overview", "tools"}
+    assert {doc["doc_id"] for doc in list_output["docs"]} == EXPECTED_DOC_IDS
     docs_by_id = {doc["doc_id"]: doc for doc in list_output["docs"]}
     assert docs_by_id["overview"]["uri"] == OVERVIEW_RESOURCE_URI
     assert docs_by_id["tools"]["uri"] == TOOLS_RESOURCE_URI
+    assert docs_by_id["world-model"]["uri"] == "civarium://docs/world-model"
+    assert docs_by_id["agent-knowledge"]["uri"] == "civarium://docs/agent-knowledge"
+    assert docs_by_id["command-lifecycle"]["uri"] == "civarium://docs/command-lifecycle"
+    assert docs_by_id["current-mechanics"]["uri"] == "civarium://docs/current-mechanics"
+    assert docs_by_id["glossary"]["uri"] == "civarium://docs/glossary"
     assert docs_by_id["overview"]["mime_type"] == "text/markdown"
     assert "Civarium" in docs_by_id["tools"]["title"]
+    assert all(doc["description"].startswith("Read this") for doc in list_output["docs"])
+    assert "knowledge boundaries" in docs_by_id["agent-knowledge"]["description"]
+    assert "queued commands" in docs_by_id["command-lifecycle"]["description"]
 
     read_result = await server.call_tool("read_civarium_doc", {"doc_id": "tools"})
     read_output = structured_content(read_result)
@@ -202,6 +214,14 @@ async def test_civarium_docs_available_through_tools(adapter_config) -> None:
     assert read_output["mime_type"] == "text/markdown"
     assert "# Civarium Agent Tools" in read_output["content"]
     assert "`submit_command`" in read_output["content"]
+
+    glossary_result = await server.call_tool("read_civarium_doc", {"doc_id": "glossary"})
+    glossary_output = structured_content(glossary_result)
+
+    assert glossary_output["doc_id"] == "glossary"
+    assert glossary_output["uri"] == "civarium://docs/glossary"
+    assert "# Civarium Glossary" in glossary_output["content"]
+    assert "Command Intent" in glossary_output["content"]
 
 
 async def test_civarium_tools_spec_available_as_resource(adapter_config) -> None:
@@ -215,6 +235,29 @@ async def test_civarium_tools_spec_available_as_resource(adapter_config) -> None
     assert "`get_active_round`" in resource_contents[0].content
     assert "`submit_command`" in resource_contents[0].content
     assert "Suggested Decision Loop" in resource_contents[0].content
+
+
+async def test_static_agent_context_docs_available_as_resources(adapter_config) -> None:
+    server = create_server(adapter_config, gateway=FakeGateway())
+    expected_headings = {
+        "world-model": "# Civarium World Model",
+        "agent-knowledge": "# Civarium Agent Knowledge",
+        "command-lifecycle": "# Civarium Command Lifecycle",
+        "current-mechanics": "# Civarium Current Mechanics",
+        "glossary": "# Civarium Glossary",
+    }
+
+    for doc in list_civarium_docs():
+        if doc.doc_id not in expected_headings:
+            continue
+
+        resource_contents = await server.read_resource(doc.uri)
+
+        assert len(resource_contents) == 1
+        assert resource_contents[0].mime_type == "text/markdown"
+        assert expected_headings[doc.doc_id] in resource_contents[0].content
+        assert "## Implemented" in resource_contents[0].content
+        assert "## Design Direction" in resource_contents[0].content
 
 
 async def test_submit_command_returns_structured_invalid_receipt(adapter_config) -> None:
