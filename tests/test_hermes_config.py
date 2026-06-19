@@ -7,6 +7,7 @@ from mcp import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 
 EXPECTED_TOOLS = {
+    "get_civarium_context",
     "get_active_round",
     "get_visible_state",
     "submit_command",
@@ -19,10 +20,10 @@ def test_hermes_example_exposes_only_expected_tools() -> None:
     text = Path("examples/hermes.config.yaml").read_text()
 
     assert 'command: "uvx"' in text
-    assert 'args: ["civarium-mcp==0.1.1"]' in text
+    assert 'args: ["civarium-mcp==0.1.2"]' in text
     assert "supports_parallel_tool_calls: false" in text
     assert "prompts: false" in text
-    assert "resources: false" in text
+    assert "resources: true" in text
     for tool_name in EXPECTED_TOOLS:
         assert f"        - {tool_name}" in text
 

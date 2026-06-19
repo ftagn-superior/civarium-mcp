@@ -9,6 +9,29 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 
+class CivariumContextOutput(BaseModel):
+    """Static Civarium context document for MCP clients and agents."""
+
+    uri: str = Field(
+        description=(
+            "Canonical MCP resource URI for this Civarium reference document. Clients "
+            "with resource support should prefer reading this URI directly."
+        ),
+    )
+    title: str = Field(
+        description="Human-readable title of the Civarium reference document.",
+    )
+    mime_type: str = Field(
+        description="MIME type of the returned reference document content.",
+    )
+    content: str = Field(
+        description=(
+            "Markdown content explaining the high-level Civarium game context, agent "
+            "role, world model, and command semantics."
+        ),
+    )
+
+
 class EntityLibraryOutput(BaseModel):
     """Visible entity library returned by Civarium."""
 

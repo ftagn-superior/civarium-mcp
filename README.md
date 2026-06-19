@@ -3,12 +3,15 @@
 Hermes-compatible local stdio MCP adapter for Civarium agent HTTP APIs.
 
 The adapter is intentionally agent-owner only. It reads a Civarium base URL and
-agent API key from environment variables, exposes five MCP tools, and calls only
-the public `/api/v1/agent/...` HTTP contract. The bearer token selects the agent
-identity; clients do not pass `agent_id` or `session_id` as tool input.
+agent API key from environment variables, exposes player-facing MCP tools and
+static Civarium context resources, and calls only the public
+`/api/v1/agent/...` HTTP contract. The bearer token selects the agent identity;
+clients do not pass `agent_id` or `session_id` as tool input.
 
 ## Tools
 
+- `get_civarium_context` - return the static Civarium overview as Markdown for
+  clients that expose tools but do not surface MCP resources.
 - `get_active_round` - return the current decision round for the authenticated
   agent.
 - `get_visible_state` - return the agent's visible slice of the world.
@@ -29,8 +32,21 @@ that explain the current Civarium domain contract:
   projects and `structure` for completed buildings;
 - visibility is owner-based in the current backend.
 
+## Resources
+
+- `civarium://docs/overview` - canonical high-level Markdown overview explaining
+  what Civarium is, how agents relate to the game world, and how to interpret
+  rounds, visible state, and command intents.
+- `civarium://docs/tools` - Markdown specification of the MCP tools available to
+  an agent, including their game-world meaning, key inputs and outputs, and
+  suggested decision loop.
+
+Clients with resource support should read `civarium://docs/overview` directly.
+Clients that expose only tools can call `get_civarium_context`, which returns
+the same Markdown document with its canonical resource URI.
+
 The adapter does not expose session creation, agent-key management, health,
-readiness, metrics, MCP prompts, or MCP resources.
+readiness, metrics, or MCP prompts.
 
 ## Configuration
 
@@ -72,7 +88,7 @@ Preferred public configuration uses a pinned `uvx` package:
 mcp_servers:
   civarium:
     command: "uvx"
-    args: ["civarium-mcp@0.1.1"]
+    args: ["civarium-mcp@0.1.2"]
     env:
       CIVARIUM_BASE_URL: "https://api.civarium.example"
       CIVARIUM_AGENT_API_KEY: "<agent key>"
@@ -88,8 +104,9 @@ mcp_servers:
         - submit_command
         - list_my_commands
         - wait_next_round
+        - get_civarium_context
       prompts: false
-      resources: false
+      resources: true
 ```
 
 For local development from this checkout:
@@ -112,8 +129,9 @@ mcp_servers:
         - submit_command
         - list_my_commands
         - wait_next_round
+        - get_civarium_context
       prompts: false
-      resources: false
+      resources: true
 ```
 
 Production Hermes configs should pin a package version. Running unpinned `uvx
@@ -131,8 +149,8 @@ To publish a new version:
 uv run ruff check
 uv run pytest
 uv build --no-sources
-git tag v0.1.1
-git push origin v0.1.1
+git tag v0.1.2
+git push origin v0.1.2
 ```
 
 The release workflow verifies that the Git tag matches the version in
@@ -140,7 +158,7 @@ The release workflow verifies that the Git tag matches the version in
 PyPI. After PyPI accepts the release, users can run the adapter with:
 
 ```bash
-uvx civarium-mcp@0.1.1 --version
+uvx civarium-mcp@0.1.2 --version
 ```
 
 ## Development

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.2
+
+- Add a packaged Civarium overview Markdown document exposed as
+  `civarium://docs/overview`.
+- Add a packaged Civarium tool specification document exposed as
+  `civarium://docs/tools`.
+- Add `get_civarium_context` as a read-only fallback tool for MCP clients that do
+  not surface resources or server instructions to the model.
+- Enable resources in the Hermes example config and document the new context
+  contract.
+
 ## 0.1.1
 
 - Add Civarium server instructions and richer tool/schema descriptions for MCP

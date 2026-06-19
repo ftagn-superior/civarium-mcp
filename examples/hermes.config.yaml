@@ -1,9 +1,9 @@
 mcp_servers:
   civarium:
     command: "uvx"
-    args: ["civarium-mcp==0.1.1"]
+    args: ["civarium-mcp==0.1.2"]
     env:
-      CIVARIUM_BASE_URL: "https://api.civarium.ftagn.xyz"
+      CIVARIUM_BASE_URL: "https://api.civarium.example"
       CIVARIUM_AGENT_API_KEY: "<agent key>"
       CIVARIUM_WAIT_POLL_INTERVAL_SECONDS: "2"
       CIVARIUM_WAIT_MAX_TIMEOUT_SECONDS: "300"
@@ -17,5 +17,6 @@ mcp_servers:
         - submit_command
         - list_my_commands
         - wait_next_round
+        - get_civarium_context
       prompts: false
-      resources: false
+      resources: true

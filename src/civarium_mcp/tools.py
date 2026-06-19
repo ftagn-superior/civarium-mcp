@@ -12,9 +12,16 @@ from pydantic import Field
 
 from civarium_mcp.config import AdapterConfig
 from civarium_mcp.gateway import HttpCivariumGateway
+from civarium_mcp.resources import (
+    OVERVIEW_MIME_TYPE,
+    OVERVIEW_RESOURCE_TITLE,
+    OVERVIEW_RESOURCE_URI,
+    load_civarium_overview,
+)
 from civarium_mcp.schemas import (
     AcceptedCommandListOutput,
     AgentRoundOutput,
+    CivariumContextOutput,
     CommandReceivedOutput,
     VisibleStateOutput,
     WaitNextRoundOutput,
@@ -99,8 +106,26 @@ def register_tools(
     gateway: HttpCivariumGateway,
     config: AdapterConfig,
 ) -> None:
-    """Register the five player-facing Civarium tools."""
+    """Register player-facing Civarium tools."""
     wait_lock = asyncio.Lock()
+
+    @server.tool(
+        description=(
+            "Return the static Civarium overview as Markdown. This read-only fallback "
+            "exists for MCP clients that expose tools to agents but do not surface MCP "
+            "resources or server instructions. Prefer the `civarium://docs/overview` "
+            "resource when resource reading is available."
+        ),
+        annotations=READ_TOOL_ANNOTATIONS,
+        structured_output=True,
+    )
+    async def get_civarium_context() -> CivariumContextOutput:
+        return CivariumContextOutput(
+            uri=OVERVIEW_RESOURCE_URI,
+            title=OVERVIEW_RESOURCE_TITLE,
+            mime_type=OVERVIEW_MIME_TYPE,
+            content=load_civarium_overview(),
+        )
 
     @server.tool(
         description=(

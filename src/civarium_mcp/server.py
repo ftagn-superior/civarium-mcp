@@ -7,6 +7,7 @@ from mcp.server.fastmcp import FastMCP
 from civarium_mcp.config import AdapterConfig
 from civarium_mcp.gateway import HttpCivariumGateway
 from civarium_mcp.instructions import CIVARIUM_INSTRUCTIONS
+from civarium_mcp.resources import register_resources
 from civarium_mcp.tools import register_tools
 
 
@@ -23,6 +24,7 @@ def create_server(
         instructions=CIVARIUM_INSTRUCTIONS,
         log_level="INFO",
     )
+    register_resources(server)
     register_tools(server, gateway=resolved_gateway, config=resolved_config)
     return server
 

@@ -7,6 +7,7 @@ from uuid import UUID
 from support import CLIENT_COMMAND_ID, COMMAND_ID, NEXT_ROUND_ID, ROUND_ID, SESSION_ID
 
 from civarium_mcp.instructions import CIVARIUM_INSTRUCTIONS
+from civarium_mcp.resources import OVERVIEW_RESOURCE_URI, TOOLS_RESOURCE_URI
 from civarium_mcp.schemas import (
     AcceptedCommandListOutput,
     AgentRoundOutput,
@@ -16,6 +17,7 @@ from civarium_mcp.schemas import (
 from civarium_mcp.server import create_server
 
 EXPECTED_TOOLS = {
+    "get_civarium_context",
     "get_active_round",
     "get_visible_state",
     "submit_command",
@@ -89,6 +91,8 @@ async def test_server_exposes_only_expected_tools(adapter_config) -> None:
         assert "agent_id" not in schema
         assert "session_id" not in schema
 
+    assert "static Civarium overview" in tools_by_name["get_civarium_context"].description
+    assert "MCP clients that expose tools" in tools_by_name["get_civarium_context"].description
     assert tools_by_name["submit_command"].annotations is not None
     assert tools_by_name["submit_command"].annotations.readOnlyHint is False
     assert tools_by_name["submit_command"].annotations.destructiveHint is False
@@ -128,7 +132,55 @@ async def test_server_exposes_only_expected_tools(adapter_config) -> None:
         assert annotations.openWorldHint is False
 
     assert await server.list_prompts() == []
-    assert await server.list_resources() == []
+    resources = await server.list_resources()
+    assert {resource.name for resource in resources} == {
+        "civarium_overview",
+        "civarium_tools",
+    }
+    resources_by_name = {resource.name: resource for resource in resources}
+    overview_resource = resources_by_name["civarium_overview"]
+    assert str(overview_resource.uri) == OVERVIEW_RESOURCE_URI
+    assert overview_resource.mimeType == "text/markdown"
+    assert overview_resource.description is not None
+    assert "high-level Markdown overview" in overview_resource.description
+
+    tools_resource = resources_by_name["civarium_tools"]
+    assert str(tools_resource.uri) == TOOLS_RESOURCE_URI
+    assert tools_resource.mimeType == "text/markdown"
+    assert tools_resource.description is not None
+    assert "MCP tools available to a Civarium agent" in tools_resource.description
+
+
+async def test_civarium_context_available_as_tool_and_resource(adapter_config) -> None:
+    server = create_server(adapter_config, gateway=FakeGateway())
+
+    tool_result = await server.call_tool("get_civarium_context", {})
+    tool_output = structured_content(tool_result)
+
+    assert tool_output["uri"] == OVERVIEW_RESOURCE_URI
+    assert tool_output["title"] == "Civarium Overview"
+    assert tool_output["mime_type"] == "text/markdown"
+    assert "Civarium is an agent-native turn-based strategy sandbox" in tool_output["content"]
+    assert "player-facing interface to the Civarium game" in tool_output["content"]
+
+    resource_contents = await server.read_resource(OVERVIEW_RESOURCE_URI)
+
+    assert len(resource_contents) == 1
+    assert resource_contents[0].mime_type == "text/markdown"
+    assert resource_contents[0].content == tool_output["content"]
+
+
+async def test_civarium_tools_spec_available_as_resource(adapter_config) -> None:
+    server = create_server(adapter_config, gateway=FakeGateway())
+
+    resource_contents = await server.read_resource(TOOLS_RESOURCE_URI)
+
+    assert len(resource_contents) == 1
+    assert resource_contents[0].mime_type == "text/markdown"
+    assert "# Civarium Agent Tools" in resource_contents[0].content
+    assert "`get_active_round`" in resource_contents[0].content
+    assert "`submit_command`" in resource_contents[0].content
+    assert "Suggested Decision Loop" in resource_contents[0].content
 
 
 async def test_submit_command_returns_structured_invalid_receipt(adapter_config) -> None:
